@@ -4,7 +4,7 @@ function Navigation({ activePage, onNavigate }) {
   const navLinks = [
     { name: 'home', page: 'home' },
     { name: 'about', page: 'about' },
-    { name: 'resume', page: 'resume', external: true, href:'/docs/certificates/Akash_Rengaraj_Resume.pdf' },
+    { name: 'resume', page: 'resume', external: true, href:'/Akash_Resume.pdf' },
     { name: 'projects', page: 'projects' },
     { name: 'honor', page: 'events' },
     { name: 'links & contacts', page: 'links' },
