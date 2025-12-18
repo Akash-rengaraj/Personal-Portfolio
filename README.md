@@ -1,4 +1,5 @@
 # Akash Rengaraj | Terminal Portfolio
+[![Live Preview](https://img.shields.io/badge/Live%20Preview-Visit%20Site-blue?style=for-the-badge&logo=render)](https://millora-sample.onrender.com/)
 
 ![Portfolio Preview](public/screenshots/home-dark.png)
 
