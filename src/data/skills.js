@@ -4,7 +4,9 @@ export const skillsData = [
       certifications: [
         { name: "Introduction to Front-End Development", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/Introduction_to_Front-End_Development.pdf" },
         { name: "Programming with JavaScript", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/Programming_with_Javascript.pdf" },
-        { name: "HTML and CSS in depth", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/HTML_and_CSS_in_depth.pdf" }
+        { name: "HTML and CSS in depth", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/HTML_and_CSS_in_depth.pdf" },
+        { name: "React Basics", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/React_Basics.pdf" }
+
       ]
     },
     {
@@ -27,6 +29,12 @@ export const skillsData = [
       skill: "AI/ML",
       certifications: [
         { name: "Introduction to Artificial Intelligence (AI)", logo: "/images/logos/ibm_logo.webp", link: "/docs/certificates/Introduction_to_Artificial_Intelligence.pdf" }
+      ]
+    },
+    {
+      skill: "Python",
+      certifications: [
+        { name: "The Joy of Computing Using Python", logo: "/images/logos/nptel_logo.png", link: "/docs/certificates/The_Joy_of_Computing_using_Python.pdf" }
       ]
     }
 ];
