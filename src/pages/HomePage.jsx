@@ -1,4 +1,5 @@
 import React from 'react';
+import TerminalBot from '../components/TerminalBot';
 
 // This component replicates the typewriter effect using CSS animations
 // defined in your existing stylesheet.
@@ -34,6 +35,7 @@ function HomePage() {
         <pre className="ascii-art">{asciiArt}</pre>
         <Typewriter />
       </div>
+      <TerminalBot />
     </div>
   );
 }

@@ -2929,3 +2929,102 @@ body.light-mode .tech-tag {
         display: none; /* Hide old tabs if present */
     }
 }
+
+
+/* Terminal Bot Styles */
+.terminal-bot {
+  position: absolute;
+  
+  font-family: 'Fira Code', monospace;
+  color: #00ff00;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: none;
+  z-index: 20;
+   /* Let clicks pass through */
+}
+
+.bot-character {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.bot-character.facing-left {
+  transform: scaleX(-1);
+}
+
+/* Fix text orientation when flipped */
+.bot-character.facing-left .bot-bubble {
+   transform: scaleX(-1);
+}
+
+.bot-head, .bot-body, .bot-legs {
+  white-space: pre;
+}
+
+.bot-bubble {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 10px;
+  background: rgba(0, 20, 0, 0.9);
+  border: 1px solid #00ff00;
+  padding: 8px 12px;
+  border-radius: 8px 8px 8px 0;
+  color: #00ff00;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.facing-left .bot-bubble {
+    /* Flip back the text so it's readable */
+    transform: scaleX(-1);
+    border-radius: 8px 8px 0 8px; 
+    left: auto;
+    right: 0;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Bot Animations */
+  25% { transform: skewX(10deg); }
+  75% { transform: skewX(-10deg); }
+  100% { transform: skewX(0deg); }
+}
+
+@keyframes botDance {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(-5deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-5px) rotate(5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+
+.terminal-bot.dancing .bot-body {
+   animation: botDance 0.5s infinite ease-in-out;
+}
+
+.terminal-bot.dancing .bot-head {
+    animation: botDance 0.5s infinite ease-in-out reverse;
+}
+
+@keyframes botBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.terminal-bot.running {
+    animation: botBounce 0.3s infinite ease-in-out;
+}
