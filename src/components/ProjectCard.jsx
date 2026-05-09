@@ -14,7 +14,10 @@ function ProjectCard({ project }) {
               playsInline
               key={project.preview.src}
             >
-              <source src={project.preview.src} type="video/mp4" />
+              <source
+                src={project.preview.src}
+                type={project.preview.src.endsWith('.webm') ? 'video/webm' : 'video/mp4'}
+              />
               Your browser does not support the video tag.
             </video>
           ) : (

@@ -33,7 +33,7 @@ const Milestones = ({ viewCount }) => {
   const totalCertifications = skillsData.reduce((total, skill) => total + skill.certifications.length, 0);
   
   // Current CGPA (you can update this value as needed)
-  const currentCGPA = "8.4";
+  const currentCGPA = "8.2";
 
   return (
     <div className="milestones-grid">
