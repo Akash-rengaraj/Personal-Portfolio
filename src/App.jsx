@@ -1,64 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import BootLoader from './components/BootLoader';
 import { db } from './firebase/config';
 import { ref, onValue, runTransaction } from 'firebase/database';
 
-import TerminalHeader from './components/TerminalHeader';
-import Navigation from './components/Navigation';
-import StatsWidget from './components/StatsWidget';
+import { AppContext } from './context/AppContext';
+import TerminalLayout from './layouts/TerminalLayout';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import ProjectsPage from './pages/ProjectsPage';
 import EventsPage from './pages/EventsPage';
 import LinksPage from './pages/LinksPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
+import ResumeViewPage from './pages/ResumeViewPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
-  const [activePage, setActivePage] = useState('home');
-  const [theme, setTheme] = useState('dark');
+  const [booting, setBooting] = useState(() => !sessionStorage.getItem('booted'));
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored) return stored;
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    return 'dark';
+  });
   const [viewCount, setViewCount] = useState(0);
 
-  // Effect for handling the theme change on the body
+  const handleBootDone = useCallback(() => {
+    sessionStorage.setItem('booted', '1');
+    setBooting(false);
+  }, []);
+
   useEffect(() => {
     document.body.className = theme === 'light' ? 'light-mode' : '';
+    localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Effect for Firebase page view counter
   useEffect(() => {
     const counterRef = ref(db, 'pageViews');
-    // Increment count only once per session
     runTransaction(counterRef, (current) => (current || 0) + 1);
-    // Listen for real-time updates to the count
     const unsubscribe = onValue(counterRef, (snapshot) => {
       setViewCount(snapshot.val() || 0);
     });
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, []); // Empty dependency array means this runs only once on mount
+  }, []);
 
-  const toggleTheme = () => {
-    setTheme(currentTheme => (currentTheme === 'dark' ? 'light' : 'dark'));
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme(t => (t === 'dark' ? 'light' : 'dark'));
+  }, []);
 
-  // Renders the current page based on the activePage state
-  const renderPage = () => {
-    switch (activePage) {
-      case 'about': return <AboutPage />;
-      case 'projects': return <ProjectsPage />;
-      case 'events': return <EventsPage viewCount={viewCount} />;
-      case 'links': return <LinksPage />;
-      case 'home':
-      default: return <HomePage />;
-    }
-  };
+  const triggerBotCommand = useCallback((detail) => {
+    window.dispatchEvent(new CustomEvent('botCommand', { detail }));
+  }, []);
+
+  if (booting) return <BootLoader onDone={handleBootDone} />;
 
   return (
-    <div className="terminal">
-      <TerminalHeader onToggleTheme={toggleTheme} />
-      <div className="terminal-content">
-        {renderPage()}
-        <Navigation activePage={activePage} onNavigate={setActivePage} />
-        <StatsWidget />
-      </div>
-    </div>
+    <AppContext.Provider value={{ theme, viewCount, triggerBotCommand }}>
+      <Routes>
+        <Route element={<TerminalLayout onToggleTheme={toggleTheme} />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/achievements" element={<EventsPage />} />
+          <Route path="/contact" element={<LinksPage />} />
+          <Route path="/projects/:slug" element={<ProjectDetailPage />} />
+        </Route>
+        <Route path="/resume-view" element={<ResumeViewPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </AppContext.Provider>
   );
 }
 

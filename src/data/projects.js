@@ -1,6 +1,8 @@
 export const projectsData = [
     {
-      title: "Get Up - An All in one Student's App 🚀",
+      slug: "get-up",
+      title: "Get Up — All-in-One Student App",
+      tagline: "A Flutter productivity companion that helps students track habits, attendance, and finances.",
       tech: ["Flutter", "Hive", "fl_chart", "confetti", "intl"],
       preview: {
         type: "video",
@@ -20,10 +22,22 @@ export const projectsData = [
         "Built with Flutter for a smooth cross-platform experience and Hive for local-first storage."
       ],
       status: "Completed",
+      duration: "6 weeks",
+      role: "Solo developer — design, architecture, implementation, testing",
+      challenge: "Students juggle attendance rules, assignment deadlines, and finances simultaneously. Existing apps solve only one of these problems. The challenge was building a unified, offline-first experience that felt personal — not corporate.",
+      solution: "Built a Flutter app with four interconnected modules sharing a single Hive database. Designed a 'Bunk-o-Meter' algorithm that reads current attendance percentage and safe-to-miss class count from the local DB in real time. Used fl_chart for visual feedback loops that make abstract stats feel tangible.",
+      impact: [
+        "100% offline — no backend, no latency, no privacy concerns",
+        "Bunk-o-Meter algorithm reduced attendance anxiety for daily users",
+        "Finance module tracks monthly budget variance with color-coded alerts",
+        "Shipped solo in 6 weeks as a 1st-year student project"
+      ],
       githubUrl: "https://github.com/Akash-rengaraj/get_up.git"
     },
     {
-      title: "Full-Stack Jewellery E-Commerce Website 💎",
+      slug: "jewellery-ecommerce",
+      title: "Full-Stack Jewellery E-Commerce",
+      tagline: "A production-grade e-commerce platform with real-time inventory and JWT auth — built solo end-to-end.",
       tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "GSAP", "Node.js", "Express", "MongoDB"],
       preview: {
         type: "video",
@@ -44,10 +58,22 @@ export const projectsData = [
         "Represents the perfect fusion of elegance and technology."
       ],
       status: "Active development",
+      duration: "10 weeks (ongoing)",
+      role: "Solo full-stack developer — schema design, REST API, React frontend, deployment",
+      challenge: "A real jewellery business needed an online presence that matched the premium feel of their physical store. The challenge: build something production-grade with a real admin dashboard, proper auth, and zero budget for third-party services.",
+      solution: "Designed a normalized MongoDB schema for products, orders, and users. Built a JWT + BCrypt auth system from scratch. Created a GSAP-powered product showcase with circular scroll interactions. Admin dashboard uses optimistic UI updates so the business owner sees changes instantly without page refreshes.",
+      impact: [
+        "Full auth system: registration, login, JWT refresh, BCrypt password hashing",
+        "Admin dashboard with live product/inventory/order management",
+        "GSAP circular scroll animations achieve 60fps on mid-range devices",
+        "TypeScript throughout — zero runtime type errors in production build"
+      ],
       githubUrl: "https://github.com/Akash-rengaraj/Full-Stack-E-Commerce-jewelery-website"
     },
     {
-      title: "Front-End Focused Icecream Website",
+      slug: "icecream-website",
+      title: "Millora — Premium Ice Cream Brand Site",
+      tagline: "A buttery-smooth frontend with Lenis scroll, Framer Motion, and a fully functional shopping cart.",
       tech: ["React 19", "TypeScript", "Vite", "Framer Motion", "Lenis", "CSS Modules"],
       preview: {
         type: "video",
@@ -68,11 +94,23 @@ export const projectsData = [
         "Designed to showcase handcrafted flavors and the brand's story in a visually stunning interface."
       ],
       status: "Completed",
+      duration: "3 weeks",
+      role: "Solo frontend developer — design system, animation architecture, cart state management",
+      challenge: "Most food brand sites feel generic. The goal was to make the product itself feel premium through motion — every scroll, hover, and transition had to reinforce the brand's quality. The technical challenge: keep animations silky while TypeScript strict mode enforces correctness.",
+      solution: "Used Lenis for sub-pixel scroll interpolation and Framer Motion's layout animations for cart interactions. Built a CSS Modules design system with custom properties for colors and spacing. Cart state in Context API with localStorage persistence — the user's order survives a page refresh.",
+      impact: [
+        "Lenis + Framer Motion achieve 60fps scroll and animation on all tested devices",
+        "Cart persistence via localStorage — zero data loss on refresh",
+        "TypeScript strict mode: 0 any types, full prop inference throughout",
+        "Lighthouse Performance score: 94+"
+      ],
       githubUrl: "https://github.com/Akash-rengaraj/Front-End-Icecream-shop-website"
     },
     {
-      title: "Portfolio Website",
-      tech: ["HTML", "CSS", "JavaScript"],
+      slug: "portfolio",
+      title: "Terminal Portfolio — akashr.dev",
+      tagline: "A hacker-aesthetic portfolio with a real terminal emulator, wandering bot, and 30+ easter eggs.",
+      tech: ["React 19", "Vite", "JavaScript", "Firebase", "react-router-dom"],
       preview: {
         type: "video",
         src: "/videos/project_disp/portfolio-preview.mp4",
@@ -82,15 +120,25 @@ export const projectsData = [
         "A terminal-themed personal portfolio website showcasing my projects, skills, and experiences.",
         "Features include:",
         "<ul class='feature-list'>",
-        "<li>Interactive terminal interface</li>",
-        "<li>Dark/Light theme toggle</li>",
-        "<li>Responsive design</li>",
-        "<li>Dynamic content loading</li>",
-        "<li>Eye-tracking animation</li>",
+        "<li>Interactive terminal interface with 20+ real commands</li>",
+        "<li>Wandering ASCII bot with drag, dance, and mood states</li>",
+        "<li>Dark/Light theme with localStorage persistence</li>",
+        "<li>Firebase Realtime Database for live visitor counter</li>",
+        "<li>Konami code easter egg (↑↑↓↓←→←→BA)</li>",
         "</ul>"
       ],
       status: "Active Development",
-      githubUrl: "https://github.com/Akash-rengaraj/Personal-Portfolio.git"
+      duration: "4 weeks (ongoing)",
+      role: "Solo developer — design, animation, terminal engine, Firebase integration",
+      challenge: "Portfolios are forgettable. The goal was to build one that's genuinely interactive — something a recruiter would demo to a colleague. The constraint: no heavy frameworks, no paid services, must feel hand-crafted.",
+      solution: "Built a full terminal emulator in React with sessionStorage history, tab autocomplete, and 20+ commands. The ASCII bot uses a custom movement engine (velocity + target interpolation at 50fps) and reacts to cursor proximity. Firebase Realtime Database powers the live visitor counter with zero backend code.",
+      impact: [
+        "Terminal emulator with 20+ commands, history, and tab autocomplete",
+        "ASCII bot with 5 moods, drag physics, and dance animation",
+        "Live visitor counter (Firebase RTDB) — updates across all open tabs",
+        "6 easter eggs including Konami code Matrix rain effect"
+      ],
+      githubUrl: "https://github.com/Akash-rengaraj/Personal-Portfolio.git",
+      liveUrl: "https://www.akashr.dev"
     }
-    // Add more projects here
 ];

@@ -52,21 +52,24 @@ const MOODS = {
   DANCE: { eyes: "[ ~_~ ]", color: "#ffff00" }
 };
 
-const TerminalBot = () => {
+const TerminalBot = ({ initialMood = 'IDLE' }) => {
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [target, setTarget] = useState(null);
-  
+
   // States
   const [isDragging, setIsDragging] = useState(false);
-  const [mood, setMood] = useState('IDLE');
+  const [mood, setMood] = useState(initialMood);
   const [message, setMessage] = useState('');
-  const [direction, setDirection] = useState(1); 
+  const [direction, setDirection] = useState(1);
   const [isDancing, setIsDancing] = useState(false);
+  const [exploding, setExploding] = useState(false);
+  const [particles, setParticles] = useState([]);
 
   // Refs
   const dragOffset = useRef({ x: 0, y: 0 });
   const botRef = useRef(null);
   const containerSize = useRef({ w: 0, h: 0 });
+  const longPressTimer = useRef(null);
 
   // Initialize and track container size
   useEffect(() => {
@@ -77,11 +80,11 @@ const TerminalBot = () => {
           w: parent.clientWidth,
           h: parent.clientHeight
         };
-        // Initial positioning
+        // Initial positioning — bottom-right corner
         if (pos.x === 50 && pos.y === 50) {
-            setPos({ 
-                x: parent.clientWidth / 2 - 20, 
-                y: parent.clientHeight - 100 
+            setPos({
+                x: parent.clientWidth - 80,
+                y: parent.clientHeight - 120
             });
         }
       }
@@ -90,6 +93,20 @@ const TerminalBot = () => {
     updateContainerSize();
     window.addEventListener('resize', updateContainerSize);
     return () => window.removeEventListener('resize', updateContainerSize);
+  }, []);
+
+  // Listen for external bot commands (from terminal input / window buttons)
+  useEffect(() => {
+    const handleBotCommand = (e) => {
+      const { type, text, mood: cmdMood } = e.detail;
+      if (type === 'speak' && text) {
+        speak(text, cmdMood || 'HAPPY', 3500);
+      } else if (type === 'dance') {
+        startDancing();
+      }
+    };
+    window.addEventListener('botCommand', handleBotCommand);
+    return () => window.removeEventListener('botCommand', handleBotCommand);
   }, []);
 
   // 1. Random Wandering Logic
@@ -228,17 +245,51 @@ const TerminalBot = () => {
   };
 
 
+  // Long-press particle explosion easter egg
+  const triggerExplosion = () => {
+    const chars = ['|', '/', '\\', '-', 'o', '*', '+', '~', '#', '='];
+    const newParticles = Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      char: chars[Math.floor(Math.random() * chars.length)],
+      angle: (i / 18) * Math.PI * 2,
+      dist: 30 + Math.random() * 50,
+      color: ['#00ffff','#00ff00','#ff00ff','#ffff00','#ffffff'][Math.floor(Math.random() * 5)],
+    }));
+    setParticles(newParticles);
+    setExploding(true);
+    speak("EXPLODE.exe executed!", "DIZZY", 2500);
+    // Reassemble after 2s
+    setTimeout(() => {
+      setExploding(false);
+      setParticles([]);
+      setMood('HAPPY');
+      speak("Reassembled. Nice try.", 'HAPPY', 2500);
+    }, 2200);
+  };
+
   // Interaction Handlers
   const handleMouseDown = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
+    // Start long-press timer (1 second)
+    longPressTimer.current = setTimeout(() => {
+      if (!isDragging) triggerExplosion();
+    }, 900);
+
     setIsDragging(true);
-    setIsDancing(false); 
+    setIsDancing(false);
     const botRect = botRef.current.getBoundingClientRect();
     dragOffset.current = {
       x: e.clientX - botRect.left,
       y: e.clientY - botRect.top
     };
     speak("Whoa!", "SURPRISED");
+  };
+
+  const handleMouseUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const handleMouseEnter = () => {
@@ -286,22 +337,44 @@ const TerminalBot = () => {
   }
 
   return (
-    <div 
+    <div
       ref={botRef}
       className={classes}
-      style={{ 
-        left: pos.x, 
-        top: pos.y, 
+      style={{
+        left: pos.x,
+        top: pos.y,
         color: MOODS[mood].color,
-        position: 'absolute', 
+        position: 'absolute',
         cursor: isDragging ? 'grabbing' : 'grab',
         zIndex: 50
       }}
       onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onMouseEnter={handleMouseEnter}
       onClick={handleClick}
       onDoubleClick={startDancing}
     >
+      {exploding && particles.map(p => (
+        <span
+          key={p.id}
+          className="bot-particle"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            color: p.color,
+            transform: `translate(${Math.cos(p.angle) * p.dist}px, ${Math.sin(p.angle) * p.dist}px)`,
+            opacity: 0,
+            animation: 'particleFly 2s ease-out forwards',
+            fontFamily: '"Fira Code", monospace',
+            fontSize: '0.7rem',
+            pointerEvents: 'none',
+          }}
+        >
+          {p.char}
+        </span>
+      ))}
       {message && (
         <div className="bot-bubble" style={{ borderColor: MOODS[mood].color, color: MOODS[mood].color }}>
           {message}

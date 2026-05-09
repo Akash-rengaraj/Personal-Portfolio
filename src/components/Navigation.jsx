@@ -1,35 +1,23 @@
-import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-function Navigation({ activePage, onNavigate }) {
-  const navLinks = [
-    { name: 'home', page: 'home' },
-    { name: 'about', page: 'about' },
-    { name: 'resume', page: 'resume', external: true, href:'/Akash_Resume.pdf' },
-    { name: 'projects', page: 'projects' },
-    { name: 'honor', page: 'events' },
-    { name: 'links & contacts', page: 'links' },
-  ];
+const githubIcon = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: '4px', verticalAlign: 'middle' }}>
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-3.795-.735-.54-1.38-1.335-1.755-1.335-1.755-1.095-.75.075-.735.075-.735 1.2.075 1.83 1.23 1.83 1.23 1.08 1.86 2.805 1.32 3.495 1.005.105-.78.42-1.32.765-1.62-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.28-1.545 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.92 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+  </svg>
+);
 
+function Navigation() {
   return (
     <nav className="nav">
-      <a href="https://github.com/Akash-rengaraj" target="_blank" rel="noopener noreferrer">tmux</a>
-      {navLinks.map(link => (
-        <a
-          key={link.name}
-          href={link.external ? link.href : '#'}
-          target={link.external ? '_blank' : '_self'}
-          rel={link.external ? 'noopener noreferrer' : ''}
-          className={activePage === link.page ? 'active' : ''}
-          onClick={(e) => {
-            if (!link.external) {
-              e.preventDefault();
-              onNavigate(link.page);
-            }
-          }}
-        >
-          {link.name}
-        </a>
-      ))}
+      <a href="https://github.com/Akash-rengaraj" target="_blank" rel="noopener noreferrer" className="nav-external">
+        {githubIcon}github
+      </a>
+      <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>home</NavLink>
+      <NavLink to="/about" className={({ isActive }) => isActive ? 'active' : ''}>about</NavLink>
+      <NavLink to="/resume-view" className={({ isActive }) => isActive ? 'active' : ''}>resume</NavLink>
+      <NavLink to="/projects" className={({ isActive }) => isActive ? 'active' : ''}>projects</NavLink>
+      <NavLink to="/achievements" className={({ isActive }) => isActive ? 'active' : ''}>achievements</NavLink>
+      <NavLink to="/contact" className={({ isActive }) => isActive ? 'active' : ''}>links & contacts</NavLink>
     </nav>
   );
 }

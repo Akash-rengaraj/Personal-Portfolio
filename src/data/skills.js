@@ -13,16 +13,16 @@ export const skillsData = [
       skill: "Version Control",
       certifications: [
         { name: "Version Control with Git", logo: "/images/logos/atlassian_logo.webp", link: "/docs/certificates/Version_Control_with_Git.pdf" },
-        { name: "Introduction to Git and GitHub", logo: "/images/logos/goole_logo.png", link: "/docs/certificates/Introduction_to_Git_and_Github.pdf" },
+        { name: "Introduction to Git and GitHub", logo: "/images/logos/google_logo.png", link: "/docs/certificates/Introduction_to_Git_and_Github.pdf" },
         { name: "Version Control", logo: "/images/logos/meta_logo.png", link: "/docs/certificates/Version_Control.pdf" }
       ]
     },
     {
       skill: "Cybersecurity",
       certifications: [
-        { name: "Foundations of Cybersecurity", logo: "/images/logos/goole_logo.png", link: "/docs/certificates/Foundation_of_Cybersecurity.pdf" },
-        { name: "Play It Safe: Manage Security Risks", logo: "/images/logos/goole_logo.png", link: "/docs/certificates/Play_It_Safe_Manage_Security_Risks.pdf" },
-        { name: "Connect and Protect: Networks and Network Security", logo: "/images/logos/goole_logo.png", link: "/docs/certificates/Connect_and_Protect.pdf" }
+        { name: "Foundations of Cybersecurity", logo: "/images/logos/google_logo.png", link: "/docs/certificates/Foundation_of_Cybersecurity.pdf" },
+        { name: "Play It Safe: Manage Security Risks", logo: "/images/logos/google_logo.png", link: "/docs/certificates/Play_It_Safe_Manage_Security_Risks.pdf" },
+        { name: "Connect and Protect: Networks and Network Security", logo: "/images/logos/google_logo.png", link: "/docs/certificates/Connect_and_Protect.pdf" }
       ]
     },
     {
