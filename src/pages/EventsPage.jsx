@@ -71,6 +71,36 @@ function fireConfetti(originEl) {
   setTimeout(() => { cancelAnimationFrame(frame); canvas.remove(); }, 4000);
 }
 
+/* ─── LeetCode difficulty grid ───────────────────── */
+function LeetCodeGrid({ stats }) {
+  const CELLS = 50;
+  const filled = Math.min(stats.solved, CELLS);
+  const t = stats.solved || 1;
+  const easyN = Math.round((stats.easy / t) * filled);
+  const medN = Math.round((stats.medium / t) * filled);
+  const hardN = filled - easyN - medN;
+
+  const cells = Array.from({ length: CELLS }, (_, i) => {
+    if (i < easyN) return 'easy';
+    if (i < easyN + medN) return 'medium';
+    if (i < easyN + medN + hardN) return 'hard';
+    return 'empty';
+  });
+
+  return (
+    <div className="lc-grid-wrapper">
+      <div className="lc-grid">
+        {cells.map((type, i) => <div key={i} className={`lc-cell lc-${type}`} />)}
+      </div>
+      <div className="lc-legend">
+        <span><span className="lc-dot lc-easy-dot" />{stats.easy} Easy</span>
+        <span><span className="lc-dot lc-medium-dot" />{stats.medium} Medium</span>
+        <span><span className="lc-dot lc-hard-dot" />{stats.hard} Hard</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Milestones ─────────────────────────────────── */
 const Milestones = () => {
   const { viewCount } = useApp();
@@ -83,8 +113,17 @@ const Milestones = () => {
       .then(data => {
         const all = data.totalSolved.find(d => d.difficulty === 'All');
         const total = data.totalQuestions.find(d => d.difficulty === 'All');
-        setLeetcodeStats({ solved: all?.count || 0, total: total?.count || 0 });
-      }).catch(() => setLeetcodeStats({ solved: 0, total: 0 }));
+        const easy = data.totalSolved.find(d => d.difficulty === 'Easy');
+        const medium = data.totalSolved.find(d => d.difficulty === 'Medium');
+        const hard = data.totalSolved.find(d => d.difficulty === 'Hard');
+        setLeetcodeStats({
+          solved: all?.count || 0,
+          total: total?.count || 0,
+          easy: easy?.count || 0,
+          medium: medium?.count || 0,
+          hard: hard?.count || 0,
+        });
+      }).catch(() => setLeetcodeStats({ solved: 0, total: 0, easy: 0, medium: 0, hard: 0 }));
 
     fetch('https://github-contributions-api.jogruber.de/v4/Akash-rengaraj')
       .then(res => res.json())
@@ -109,6 +148,7 @@ const Milestones = () => {
           <div className="milestone-title"><i className="fa-solid fa-code"></i> LeetCode Solved</div>
           <div className="big-number"><span>{leetcodeStats.solved}</span> / <span>{leetcodeStats.total}</span></div>
           <div className="progress-bar"><div style={{ width: `${leetcodePercent}%` }}></div></div>
+          <LeetCodeGrid stats={leetcodeStats} />
           <div className="milestone-comment">Solving one problem at a time 🧠</div>
         </div>
       )}
@@ -157,8 +197,83 @@ const Milestones = () => {
   );
 };
 
+/* ─── Skills Radar Chart ─────────────────────────── */
+const RADAR_DATA = [
+  { label: 'Frontend', value: 90 },
+  { label: 'Backend', value: 75 },
+  { label: 'Mobile', value: 70 },
+  { label: 'IoT', value: 65 },
+  { label: 'AI / ML', value: 60 },
+  { label: 'Security', value: 70 },
+];
+
+function SkillsRadar() {
+  const cx = 150, cy = 155, r = 100;
+  const n = RADAR_DATA.length;
+
+  const pt = (i, val) => {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return [cx + Math.cos(angle) * (val / 100) * r, cy + Math.sin(angle) * (val / 100) * r];
+  };
+
+  const gridPoly = (level) =>
+    RADAR_DATA.map((_, i) => pt(i, level).join(',')).join(' ');
+
+  const dataPoints = RADAR_DATA.map((d, i) => pt(i, d.value));
+  const dataPolygon = dataPoints.map(p => p.join(',')).join(' ');
+
+  return (
+    <div className="radar-wrapper reveal">
+      <div className="radar-title">// skill_proficiency.svg</div>
+      <div className="radar-inner">
+        <svg viewBox="0 0 300 310" className="radar-svg" aria-label="Skills radar chart">
+          {[25, 50, 75, 100].map(lvl => (
+            <polygon key={lvl} points={gridPoly(lvl)} className="radar-grid" />
+          ))}
+          {RADAR_DATA.map((_, i) => {
+            const [x, y] = pt(i, 100);
+            return <line key={i} x1={cx} y1={cy} x2={x} y2={y} className="radar-axis" />;
+          })}
+          <polygon points={dataPolygon} className="radar-data" />
+          {dataPoints.map((p, i) => (
+            <circle key={i} cx={p[0]} cy={p[1]} r="4" className="radar-dot" />
+          ))}
+          {RADAR_DATA.map((d, i) => {
+            const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+            const lx = cx + Math.cos(angle) * (r + 24);
+            const ly = cy + Math.sin(angle) * (r + 24);
+            const anchor = Math.abs(Math.cos(angle)) < 0.15 ? 'middle' : Math.cos(angle) > 0 ? 'start' : 'end';
+            return (
+              <text key={i} x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" className="radar-label">
+                {d.label}
+              </text>
+            );
+          })}
+          {[25, 50, 75].map(lvl => {
+            const [x, y] = pt(0, lvl);
+            return <text key={lvl} x={x + 4} y={y - 4} className="radar-grid-label">{lvl}%</text>;
+          })}
+        </svg>
+        <div className="radar-legend">
+          {RADAR_DATA.map(d => (
+            <div key={d.label} className="radar-legend-row">
+              <span className="radar-legend-label">{d.label}</span>
+              <div className="radar-bar-track">
+                <div className="radar-bar-fill" style={{ width: `${d.value}%` }} />
+              </div>
+              <span className="radar-legend-pct">{d.value}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Skills ─────────────────────────────────────── */
 const Skills = () => (
+  <>
+  <SkillsRadar />
   <div className="skills-grid">
     {skillsData.map(skill => (
       <div key={skill.skill} className="skill-cert-card reveal">
@@ -177,6 +292,7 @@ const Skills = () => (
       </div>
     ))}
   </div>
+  </>
 );
 
 /* ─── GitHub Activity Feed ───────────────────────── */

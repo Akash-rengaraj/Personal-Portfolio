@@ -4996,3 +4996,203 @@ body.light-mode .hack-tl-project { color: rgba(15,110,86,0.75); }
 }
 
 body.light-mode .hack-tl-achievement { background: rgba(180,130,0,0.08); border-color: rgba(180,130,0,0.3); color: #8a6500; }
+
+/* ─── LeetCode difficulty grid ───────────────────── */
+.lc-grid-wrapper {
+  margin: 0.75rem 0 0.5rem;
+}
+
+.lc-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin-bottom: 0.45rem;
+}
+
+.lc-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  transition: transform 0.15s;
+}
+
+.lc-cell:hover { transform: scale(1.3); }
+
+.lc-easy   { background: #00b8a3; }
+.lc-medium { background: #ffa116; }
+.lc-hard   { background: #ef4743; }
+.lc-empty  { background: rgba(255,255,255,0.07); }
+
+body.light-mode .lc-empty { background: rgba(0,0,0,0.08); }
+
+.lc-legend {
+  display: flex;
+  gap: 1rem;
+  font-family: "Fira Code", monospace;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.55);
+}
+
+body.light-mode .lc-legend { color: rgba(0,0,0,0.5); }
+
+.lc-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.lc-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.lc-easy-dot   { background: #00b8a3; }
+.lc-medium-dot { background: #ffa116; }
+.lc-hard-dot   { background: #ef4743; }
+
+/* ─── Skills Radar Chart ─────────────────────────── */
+.radar-wrapper {
+  background: rgba(0,255,255,0.02);
+  border: 1px solid rgba(0,255,255,0.1);
+  border-radius: 6px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+body.light-mode .radar-wrapper {
+  background: rgba(15,110,86,0.02);
+  border-color: rgba(15,110,86,0.12);
+}
+
+.radar-title {
+  font-family: "Fira Code", monospace;
+  font-size: 0.72rem;
+  color: rgba(0,255,255,0.5);
+  margin-bottom: 1rem;
+}
+
+body.light-mode .radar-title { color: rgba(15,110,86,0.5); }
+
+.radar-inner {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.radar-svg {
+  width: 260px;
+  height: 270px;
+  flex-shrink: 0;
+}
+
+.radar-grid {
+  fill: none;
+  stroke: rgba(0,255,255,0.12);
+  stroke-width: 1;
+}
+
+body.light-mode .radar-grid { stroke: rgba(15,110,86,0.15); }
+
+.radar-axis {
+  stroke: rgba(0,255,255,0.15);
+  stroke-width: 1;
+}
+
+body.light-mode .radar-axis { stroke: rgba(15,110,86,0.18); }
+
+.radar-data {
+  fill: rgba(0,255,255,0.12);
+  stroke: rgba(0,255,255,0.6);
+  stroke-width: 1.5;
+}
+
+body.light-mode .radar-data {
+  fill: rgba(15,110,86,0.1);
+  stroke: rgba(15,110,86,0.6);
+}
+
+.radar-dot {
+  fill: #00ffff;
+  stroke: rgba(0,0,0,0.4);
+  stroke-width: 1;
+}
+
+body.light-mode .radar-dot { fill: #0f6e56; }
+
+.radar-label {
+  font-family: "Fira Code", monospace;
+  font-size: 0.7rem;
+  fill: rgba(0,255,255,0.75);
+}
+
+body.light-mode .radar-label { fill: rgba(15,110,86,0.8); }
+
+.radar-grid-label {
+  font-family: "Fira Code", monospace;
+  font-size: 0.55rem;
+  fill: rgba(255,255,255,0.25);
+}
+
+body.light-mode .radar-grid-label { fill: rgba(0,0,0,0.25); }
+
+.radar-legend {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.radar-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: "Fira Code", monospace;
+  font-size: 0.72rem;
+}
+
+.radar-legend-label {
+  width: 72px;
+  color: rgba(255,255,255,0.65);
+  flex-shrink: 0;
+}
+
+body.light-mode .radar-legend-label { color: rgba(0,0,0,0.6); }
+
+.radar-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+body.light-mode .radar-bar-track { background: rgba(0,0,0,0.08); }
+
+.radar-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,255,255,0.6), rgba(0,255,255,0.9));
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+body.light-mode .radar-bar-fill {
+  background: linear-gradient(90deg, rgba(15,110,86,0.6), rgba(15,110,86,0.9));
+}
+
+.radar-legend-pct {
+  width: 32px;
+  text-align: right;
+  color: rgba(0,255,255,0.7);
+  font-size: 0.68rem;
+}
+
+body.light-mode .radar-legend-pct { color: rgba(15,110,86,0.7); }
+
+@media (max-width: 600px) {
+  .radar-inner { flex-direction: column; align-items: flex-start; }
+  .radar-svg { width: 220px; height: 230px; }
+}
