@@ -5196,3 +5196,95 @@ body.light-mode .radar-legend-pct { color: rgba(15,110,86,0.7); }
   .radar-inner { flex-direction: column; align-items: flex-start; }
   .radar-svg { width: 220px; height: 230px; }
 }
+
+/* ─── Terminal hint nudge ─────────────────────────── */
+@keyframes hintFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.terminal-hint {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 20;
+  background: rgba(0, 14, 14, 0.88);
+  border: 1px solid rgba(0, 255, 255, 0.18);
+  border-radius: 5px;
+  padding: 0.55rem 0.8rem 0.6rem;
+  font-family: "Fira Code", monospace;
+  max-width: 190px;
+  backdrop-filter: blur(6px);
+  animation: hintFadeIn 0.5s ease 0.4s both;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+body.light-mode .terminal-hint {
+  background: rgba(240, 248, 245, 0.92);
+  border-color: rgba(15, 110, 86, 0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.hint-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.35rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.hint-close:hover { color: rgba(0, 255, 255, 0.75); }
+
+body.light-mode .hint-close       { color: rgba(0, 0, 0, 0.25); }
+body.light-mode .hint-close:hover { color: rgba(15, 110, 86, 0.8); }
+
+.hint-header {
+  font-size: 0.62rem;
+  color: rgba(0, 255, 255, 0.45);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+body.light-mode .hint-header { color: rgba(15, 110, 86, 0.5); }
+
+.hint-cmds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin-bottom: 0.4rem;
+}
+
+.hint-cmd {
+  display: block;
+  font-size: 0.7rem;
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.07);
+  border: 1px solid rgba(0, 255, 255, 0.12);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  letter-spacing: 0.03em;
+}
+
+body.light-mode .hint-cmd {
+  color: #0a6b50;
+  background: rgba(15, 110, 86, 0.07);
+  border-color: rgba(15, 110, 86, 0.15);
+}
+
+.hint-sub {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.02em;
+}
+
+body.light-mode .hint-sub { color: rgba(0, 0, 0, 0.3); }
+
+@media (max-width: 480px) {
+  .terminal-hint { top: 0.5rem; left: 0.5rem; max-width: 160px; }
+}

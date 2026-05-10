@@ -114,6 +114,30 @@ function AvailabilityBadge() {
   );
 }
 
+/* ─── Terminal hint nudge ─────────────────────────── */
+function TerminalHint() {
+  const [visible, setVisible] = useState(() => !localStorage.getItem('hintDismissed'));
+
+  if (!visible) return null;
+
+  return (
+    <div className="terminal-hint" role="complementary" aria-label="Terminal tip">
+      <button
+        className="hint-close"
+        onClick={() => { localStorage.setItem('hintDismissed', '1'); setVisible(false); }}
+        aria-label="Dismiss tip"
+      >×</button>
+      <div className="hint-header">// try typing:</div>
+      <div className="hint-cmds">
+        <span className="hint-cmd">sudo hack</span>
+        <span className="hint-cmd">sudo dance</span>
+        <span className="hint-cmd">help</span>
+      </div>
+      <div className="hint-sub">↓ in the terminal below</div>
+    </div>
+  );
+}
+
 /* ─── sudo easter egg ─────────────────────────────── */
 function SudoEasterEgg() {
   const [active, setSudo] = useState(false);
@@ -159,6 +183,7 @@ function HomePage() {
         <meta name="twitter:image" content="https://www.akashr.dev/screenshots/home-dark.png" />
       </Helmet>
       <div className="page active" id="home">
+        <TerminalHint />
         <div className="home-content">
           <pre className="ascii-art">{asciiArt}</pre>
           <Typewriter />
