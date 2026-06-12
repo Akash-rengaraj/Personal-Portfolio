@@ -12,7 +12,7 @@ const socialLinks = [
 const contactLinks = [
     { type: "Email", value: "akashrengaraj2007@gmail.com", icon: "fas fa-envelope", url: "mailto:akashrengaraj2007@gmail.com", color: "email" },
     { type: "Discord", value: "akash_rengaraj", icon: "fab fa-discord", url: "https://discord.com/users/1281218820421320768", color: "discord" },
-    { type: "Phone", value: "+91 93453 86706", icon: "fas fa-phone", url: "tel:+919345386706", color: "phone" },
+    { type: "Phone", value: "+91 93425 84561", icon: "fas fa-phone", url: "tel:+919342584561", color: "phone" },
 ];
 
 // Replace YOUR_FORM_ID after creating a free Formspree form at formspree.io

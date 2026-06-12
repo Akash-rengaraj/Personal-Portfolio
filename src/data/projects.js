@@ -1,4 +1,40 @@
 export const projectsData = [
+  {
+    slug: "arify",
+    title: "ARify — 3D Room Scanning",
+    tagline: "An open-source pipeline to AR-ify any physical space and share it with the world.",
+    tech: ["Flutter", "FastAPI", "Android ARCore", "Unity (WebXR)"],
+    preview: {
+      type: "video",
+      src: "/videos/project_disp/arify-preview.mp4",
+      alt: "ARify App Preview"
+    },
+    description: [
+      "ARify is an end-to-end open-source toolset designed to make 3D room scanning and spatial sharing completely free.",
+      "Using native Android AR hardware, it guides users through capturing optimal angles of a room. It then processes these images locally into a photorealistic 3D environment.",
+      "Key Features:",
+      "<ul class='feature-list'>",
+      "<li><b>Guided Spatial Tracking:</b> Maps a virtual sphere around the user, distributing 50 capture nodes (Spherical Fibonacci mapping) for 360-degree coverage.</li>",
+      "<li><b>Auto-Trigger Capture:</b> Automatically snaps an environment frame the moment the device camera aligns with a spatial target.</li>",
+      "<li><b>Zero-Cost Processing:</b> Bypasses expensive cloud APIs. ARify compresses the raw images into a `.zip` payload and beams it to a local backend for rendering.</li>",
+      "<li><b>Asynchronous Backend:</b> Built on FastAPI to handle multi-part form uploads and queue heavy 3D rendering jobs in the background.</li>",
+      "<li><b>Spatial Sharing:</b> Compress and share the 3D model for others to experience the space virtually.</li>",
+      "</ul>",
+      "Built with Flutter for the mobile frontend and FastAPI for the backend 3D processing pipeline."
+    ],
+    status: "in development",
+    duration: "still working",
+    role: "Solo developer — mobile UI/UX, spatial tracking algorithm, backend API, processing pipeline",
+    challenge: "Standard 3D room scanning and mesh reconstruction relies on expensive cloud services. The challenge was to replicate this high-quality spatial reconstruction experience using only on-device AR hardware and open-source processing libraries, making spatial sharing accessible to everyone.",
+    solution: "Developed a Flutter app with native Android ARCore integration. Implemented a Spherical Fibonacci algorithm to mathematically distribute 50 optimal capture nodes, ensuring complete 360-degree coverage while guiding the user via an AR guidance sphere. The backend uses FastAPI to receive compressed .zip payloads and triggers subprocesses to handle heavy mesh reconstruction.",
+    impact: [
+      "Open-source pipeline for 3D room reconstruction — completely free of cloud service costs",
+      "Spherical Fibonacci mapping ensures optimal node distribution for 360-degree coverage",
+      "Auto-trigger capture system captures environment frames automatically when aligned with targets",
+      "Zero-latency UX with on-device processing and local backend infrastructure"
+    ],
+    githubUrl: "https://github.com/Akash-rengaraj/ARify.git"
+  },
     {
       slug: "get-up",
       title: "Get Up — All-in-One Student App",

@@ -61,7 +61,7 @@ const AboutPage = () => {
                         </h2>
                         <div className="section-content">
                             <p>
-                                I'm a 2nd-year <strong>B.Tech AI & Data Science</strong> student at Kathir College of Engineering, Coimbatore,
+                                I'm a 3rd-year (2024 - 2028 Batch) <strong>B.Tech AI & Data Science</strong> student at Sri Krishna College of Engineering and Technology, Coimbatore,
                                 and a self-taught full-stack developer who builds products end-to-end — from database schema to pixel-perfect UI.
                                 I led a four-person team to the <strong>Top 10 at HackIndia 2025</strong> with a real-time AI traffic management system.
                                 I run the AI & Data Science department club and have shipped 4 complete projects independently.
@@ -82,15 +82,17 @@ const AboutPage = () => {
                         <div className="section-content currently-learning">
                             <div className="learning-item">
                                 <span className="learning-icon">⚡</span>
-                                <span>Advanced React patterns — compound components, render props, custom hooks</span>
+                                <span>Non Linear Data Structures</span>
                             </div>
                             <div className="learning-item">
                                 <span className="learning-icon">🤖</span>
-                                <span>RAG systems & LangChain — building AI apps that go beyond basic prompting</span>
+                                <span>ML from Stratch again - Forgetting everything and learning ML from stratch 
+                                </span>
                             </div>
                             <div className="learning-item">
                                 <span className="learning-icon">🔌</span>
-                                <span>Embedded ML — running TinyML models on Arduino and ESP32</span>
+                                <span>Agentic AI & Automations - gaining hands on experience on agentic AI worflow
+                                     and AI automations</span>
                             </div>
                         </div>
                     </section>
@@ -125,11 +127,23 @@ const AboutPage = () => {
                             <div className="timeline-item">
                                 <div className="timeline-marker"></div>
                                 <div className="timeline-content">
-                                    <h3 className="timeline-title">B.Tech — Artificial Intelligence & Data Science</h3>
-                                    <p className="timeline-date">2024 – Present</p>
+                                    <h3 className="timeline-title">Higher Secondary Education</h3>
+                                    <p className="timeline-date">2009 – 2024</p>
                                     <p className="timeline-desc">
-                                        Kathir College of Engineering, Coimbatore.<br />
-                                        Current CGPA: <strong>8.2</strong>
+                                        Sri Krishna College of Engineering and Technology, Coimbatore.<br />
+                                        10th grade percentage: <strong>89.8%</strong><br />
+                                        12th grade percentage: <strong>90.5%</strong><br />
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="timeline-item">
+                                <div className="timeline-marker"></div>
+                                <div className="timeline-content">
+                                    <h3 className="timeline-title">B.Tech — Artificial Intelligence & Data Science</h3>
+                                    <p className="timeline-date">2024 – 2028</p>
+                                    <p className="timeline-desc">
+                                        Sri Krishna College of Engineering and Technology, Coimbatore.<br />
+                                        Current CGPA(1st to 4th semester): <strong>8.32</strong>
                                     </p>
                                 </div>
                             </div>
@@ -182,7 +196,7 @@ const AboutPage = () => {
                         </h2>
                         <div className="section-content">
                             <p>
-                                Beyond code: 3D design, drawing, painting, writing poetry, and travelling whenever possible.
+                                Beyond code: Guitar, Singing, Travelling, Drawing, Poetry, 3d designing, RC IOT stuffs whenever possible.
                                 I believe the best developers are people first — curiosity doesn't stop at the terminal.
                             </p>
                         </div>

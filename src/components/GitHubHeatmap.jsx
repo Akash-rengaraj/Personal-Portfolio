@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const LEVEL_COLORS_DARK = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'];
 const LEVEL_COLORS_LIGHT = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -11,6 +11,7 @@ function GitHubHeatmap({ username = 'Akash-rengaraj' }) {
   const [contributions, setContributions] = useState(null);
   const [tooltip, setTooltip] = useState(null);
   const [error, setError] = useState(false);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`)
@@ -18,6 +19,13 @@ function GitHubHeatmap({ username = 'Akash-rengaraj' }) {
       .then(data => setContributions(data.contributions || []))
       .catch(() => setError(true));
   }, [username]);
+
+  useEffect(() => {
+    if (contributions && scrollRef.current) {
+      // Scroll to the far right after rendering the heatmap
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [contributions]);
 
   if (error) return (
     <div className="heatmap-error output-error">
@@ -65,7 +73,7 @@ function GitHubHeatmap({ username = 'Akash-rengaraj' }) {
           <span>More</span>
         </div>
       </div>
-      <div className="heatmap-scroll">
+      <div className="heatmap-scroll" ref={scrollRef}>
         <div className="heatmap-grid-wrapper">
           <div className="heatmap-day-labels">
             {DAYS.map((d, i) => <div key={i} className="heatmap-day-label">{d}</div>)}

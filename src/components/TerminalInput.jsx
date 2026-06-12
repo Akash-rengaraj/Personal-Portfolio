@@ -171,10 +171,10 @@ function TerminalInput() {
         '╠════════════════════════════════════════╣',
         '║  Debugging style  : console.log wizard ║',
         '║  Commits at 2am   : very often         ║',
-        '║  Favourite editor : VS Code (sorry vim) ║',
+        '║  Favourite editor : antigravity        ║',
         '║  Tabs vs Spaces   : spaces. fight me.  ║',
-        '║  Dream stack      : Next.js + FastAPI  ║',
-        '║  Fuelled by       : tea, not coffee    ║',
+        '║  Dream stack      : Assembly + C       ║',
+        '║  Fuelled by       : coffee and thrill  ║',
         '║  Available for    : your internship 🚀 ║',
         '╚════════════════════════════════════════╝',
       ], 'success');
