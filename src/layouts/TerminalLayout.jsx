@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import TerminalHeader from '../components/TerminalHeader';
 import Navigation from '../components/Navigation';
 import StatsWidget from '../components/StatsWidget';
-import CustomCursor from '../components/CustomCursor';
+
 import { useApp } from '../context/AppContext';
 
 function TerminalLayout({ onToggleTheme }) {
@@ -77,7 +77,7 @@ function TerminalLayout({ onToggleTheme }) {
 
   return (
     <>
-      <CustomCursor />
+
       <div className={`terminal ${terminalEffect}`}>
         {flashVisible && <div className="terminal-flash" />}
         {sweeping && <div className="page-sweep" aria-hidden="true" />}
