@@ -3928,6 +3928,8 @@ body.light-mode :focus-visible { outline-color: #0F6E56; }
 .project-detail-page {
   overflow-y: auto;
   padding: 0;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .project-detail-inner {
@@ -4092,6 +4094,49 @@ body.light-mode .case-section {
 
 .case-impact {
   grid-column: 1 / -1;
+}
+
+/* ─── Case Study Gallery ─────────────────────────── */
+.project-gallery {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.gallery-item {
+  width: 100%;
+  height: 220px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(0,255,255,0.15);
+  background: rgba(0,255,255,0.02);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body.light-mode .gallery-item {
+  border-color: rgba(15,110,86,0.2);
+  background: rgba(15,110,86,0.03);
+}
+
+.gallery-item video,
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.gallery-item:hover video,
+.gallery-item:hover img {
+  transform: scale(1.03);
 }
 
 .case-label {

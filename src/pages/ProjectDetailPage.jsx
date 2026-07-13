@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { projectsData } from '../data/projects.js';
@@ -7,6 +8,13 @@ function ProjectDetailPage() {
   const navigate = useNavigate();
   const idx = projectsData.findIndex(p => p.slug === slug);
   const project = projectsData[idx];
+  const pageRef = useRef(null);
+
+  useEffect(() => {
+    if (pageRef.current) {
+      pageRef.current.scrollTop = 0;
+    }
+  }, [slug]);
 
   if (!project) {
     return (
@@ -29,7 +37,7 @@ function ProjectDetailPage() {
         <meta name="description" content={project.tagline} />
         <meta property="og:title" content={`${project.title} — Akash Rengaraj`} />
       </Helmet>
-      <div className="page active project-detail-page">
+      <div ref={pageRef} className="page active project-detail-page">
         <div className="project-detail-inner">
 
           {/* Back nav */}
@@ -90,6 +98,26 @@ function ProjectDetailPage() {
                 ))}
               </ul>
             </div>
+            
+            {project.gallery && project.gallery.length > 0 && (
+              <div className="case-section project-gallery">
+                <div className="case-label">04 / media gallery</div>
+                <h2 className="case-title">Screenshots & Demos</h2>
+                <div className="gallery-grid">
+                  {project.gallery.map((media, i) => (
+                    <div key={i} className="gallery-item">
+                      {media.type === 'video' ? (
+                        <video autoPlay muted loop playsInline className="gallery-video">
+                          <source src={media.src} type={media.src.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
+                        </video>
+                      ) : (
+                        <img src={media.src} alt={media.alt || 'Project media'} className="gallery-image" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Prev / Next navigation */}

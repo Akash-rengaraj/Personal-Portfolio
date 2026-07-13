@@ -1,5 +1,52 @@
 export const projectsData = [
   {
+    "slug": "neo",
+    "title": "Neo — Interactive Defensive Analytics & Auditing Studio",
+    "tagline": "A Multi-Agent DevSecOps Threat Intelligence Framework.",
+    "tech": ["Python", "Streamlit", "CrewAI", "ChromaDB"],
+    "preview": {
+      "type": "video",
+      "src": "/videos/project_disp/neo-preview.mp4",
+      "alt": "Neo System Workflow Diagram"
+    },
+    "description": [
+      "Neo is a state-of-the-art cybersecurity auditing engine designed to provide deep, interactive defensive analysis of infrastructure, code paths, and configuration exposures.",
+      "Built using Streamlit for a persistent, stateful UI and CrewAI for multi-agent orchestration, Neo leverages Retrieval-Augmented Generation (RAG) over a local vector database to deliver precise threat intelligence.",
+      "Key Features:",
+      "<ul class='feature-list'>",
+      "<li><b>Multi-Agent Orchestration:</b> Configured a three-tier AI agent hierarchy (Triage Architect, Threat Modeler, and Compliance Reviewer) using CrewAI to parse, model, and synthesize threat intelligence.</li>",
+      "<li><b>Vector Database (RAG):</b> Integrated ChromaDB and BAAI/bge-large-en-v1.5 embeddings to query a massive cybersecurity knowledge base.</li>",
+      "<li><b>Stateful Chat Interface:</b> Developed a seamless, real-time interactive Streamlit dashboard that maintains conversational context securely.</li>",
+      "<li><b>Dynamic Routing:</b> Implemented smart routing so the system provides direct, unfiltered answers for general queries while invoking the full security reasoning chain for architectural or threat-related questions.</li>",
+      "</ul>",
+      "The system is designed for DevSecOps professionals to query architectural flaws, compliance risks, and theoretical threat vectors in a safe, defensive context."
+    ],
+    "status": "active",
+    "duration": "recent",
+    "role": "Solo Developer — AI Orchestration, RAG Pipeline, Full Stack Engineering",
+    "challenge": "Security auditing and threat modeling are traditionally manual and time-consuming. DevSecOps professionals needed an interactive, intelligent way to query architectural flaws, compliance risks, and theoretical threat vectors in a defensive context without relying solely on static auditing tools.",
+    "solution": "Developed a conversational audit engine that uses RAG (ChromaDB) to retrieve historical threat context and inject it into a three-tier CrewAI pipeline. The agents autonomously triage risks, model threats, and synthesize deep defensive responses, all orchestrated through a persistent and interactive Streamlit UI.",
+    "impact": [
+      "Three-tier multi-agent pipeline for precise security triage and theoretical threat modeling",
+      "Semantic vector retrieval with local ChromaDB ensuring deep historical context injection",
+      "Smart dynamic routing bypassing heavy agent execution for general non-security queries",
+      "Stateful real-time Streamlit dashboard maintaining complex conversational context"
+    ],
+    "gallery": [
+      {
+        "type": "image",
+        "src": "/images/project_previews/neo-workflow-diagram-v1.png",
+        "alt": "Neo Workflow Diagram"
+      },
+      {
+        "type": "image",
+        "src": "/images/project_previews/neo-poster.png",
+        "alt": "Neo Project Poster"
+      }
+    ],
+    "githubUrl": "https://github.com/Akash-rengaraj/Neo.git"
+},
+  {
     slug: "arify",
     title: "ARify — 3D Room Scanning",
     tagline: "An open-source pipeline to AR-ify any physical space and share it with the world.",
