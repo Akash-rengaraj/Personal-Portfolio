@@ -1,6 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { profile, CGPA_TEXT } from '../data/profile';
+import { projectsData } from '../data/projects';
+import { techStack } from '../data/skills';
 
 const JOKES = [
   "Why do programmers prefer dark mode? Because light attracts bugs.",
@@ -38,7 +41,9 @@ const QUOTES = [
   "\"Talk is cheap. Show me the code.\" — Linus Torvalds",
 ];
 
-const AUTOCOMPLETE = ['help', 'whoami', 'ls', 'cat bio.txt', 'cat skills.txt', 'cat resume.pdf', 'resume-view', 'projects', 'about', 'achievements', 'contact', 'hire', 'clear', 'theme dark', 'theme light', 'sudo dance', 'sudo hack', 'coffee', 'joke', 'quote', 'date', 'weather', 'github', 'linkedin', 'email', 'secret', 'cat .easter-eggs'];
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+
+const AUTOCOMPLETE = ['help', 'whoami', 'ls', 'cat bio.txt', 'cat skills.txt', 'cat resume.pdf', 'resume-view', 'projects', 'about', 'achievements', 'contact', 'hire', 'blog', 'clear', 'theme dark', 'theme light', 'sudo dance', 'sudo hack', 'coffee', 'joke', 'quote', 'date', 'weather', 'github', 'linkedin', 'email', 'secret', 'cat .easter-eggs'];
 
 function TerminalInput() {
   const [input, setInput] = useState('');
@@ -46,10 +51,13 @@ function TerminalInput() {
   const [histIdx, setHistIdx] = useState(-1);
   const [matrixActive, setMatrixActive] = useState(false);
   const inputRef = useRef(null);
+  const displayRef = useRef(null);
+  const [caret, setCaret] = useState(0);
+  const [focused, setFocused] = useState(false);
   const outputRef = useRef(null);
   const history = useRef(JSON.parse(sessionStorage.getItem('termHistory') || '[]'));
   const navigate = useNavigate();
-  const { triggerBotCommand } = useApp();
+  const { triggerBotCommand, setTheme } = useApp();
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -98,6 +106,7 @@ function TerminalInput() {
         '  about           — navigate to about',
         '  achievements    — navigate to achievements',
         '  contact / hire  — navigate to contact page',
+        '  blog            — read the devlog',
         '  theme dark/light — toggle theme',
         '  sudo dance      — make the bot dance',
         '  sudo hack       — ???',
@@ -114,12 +123,12 @@ function TerminalInput() {
       ], 'info');
     } else if (c === 'whoami') {
       addOutput([
-        'Akash Rengaraj',
-        '  — 2nd-year B.Tech AI & Data Science, Kathir College of Engineering',
+        profile.name,
+        `  — ${profile.year} ${profile.degree}, ${profile.college}`,
+        `  — ${profile.clubRole}, ${profile.club} · CGPA ${CGPA_TEXT}`,
         '  — Full-stack developer (React, Node, Flutter, Python)',
-        '  — IoT enthusiast, cybersecurity learner, club leader',
         '  — HackIndia 2025 Top 10 Finalist',
-        '  — Coimbatore, Tamil Nadu | Available for internship immediately',
+        `  — ${profile.city}, ${profile.region} | Available for internship immediately`,
       ], 'success');
     } else if (c === 'about') {
       navigate('/about');
@@ -131,27 +140,18 @@ function TerminalInput() {
       navigate('/resume-view');
       addOutput('Opening interactive resume...', 'success');
     } else if (c === 'ls') {
-      addOutput(['home/  about/  projects/  achievements/  contact/  resume-view/'], 'info');
+      addOutput(['home/  about/  projects/  achievements/  blog/  contact/  resume-view/'], 'info');
     } else if (c === 'cat bio.txt') {
       addOutput([
         'Full-stack developer & AI/DS student who builds real products from scratch.',
-        'Led a team to Top 10 at HackIndia 2025. Runs the AI&DS club at Kathir College.',
+        `Led a team to Top 10 at HackIndia 2025. ${profile.clubRole} of the ${profile.club}.`,
         'Comfortable with React, Node, Flutter, Python, Arduino, and anything that solves a real problem.',
         'Available for internship immediately. Open to full-stack, IoT, AI/ML, or security roles.',
       ], 'success');
     } else if (c === 'cat skills.txt') {
-      addOutput([
-        'Frontend   : React 19, TypeScript, Next.js, Framer Motion, GSAP',
-        'Backend    : Node.js, Express, FastAPI, Python',
-        'Databases  : MongoDB, PostgreSQL, Firebase, Hive',
-        'Mobile     : Flutter, Dart',
-        'IoT        : Arduino, Raspberry Pi, ESP32',
-        'AI/ML      : scikit-learn, TensorFlow basics, RAG systems',
-        'Security   : Google Cybersecurity Professional, CTF participant',
-        'Tools      : Git, Vite, Docker (basics), Vercel, Railway',
-      ], 'success');
+      addOutput(techStack.map(({ group, items }) => `${group.padEnd(10)} : ${items.join(', ')}`), 'success');
     } else if (c === 'cat resume.pdf') {
-      window.open('/Akash_Resume.pdf', '_blank');
+      window.open(profile.resume, '_blank');
       addOutput('Resume opened in new tab ↗', 'success');
     } else if (c === 'cat .easter-eggs') {
       addOutput([
@@ -179,29 +179,23 @@ function TerminalInput() {
         '╚════════════════════════════════════════╝',
       ], 'success');
     } else if (c === 'projects') {
-      addOutput([
-        'Projects:',
-        '  1. Get Up — Flutter student productivity app',
-        '  2. Jewellery E-Commerce — React + Node.js full-stack',
-        '  3. Icecream Website — React 19 + Framer Motion frontend',
-        '  4. Portfolio — React 19 + Vite + Firebase (you\'re looking at it)',
-      ], 'info');
+      addOutput(['Projects:', ...projectsData.map((p, i) => `  ${i + 1}. ${p.title}`)], 'info');
       setTimeout(() => navigate('/projects'), 1200);
       addOutput('Navigating to /projects...', 'success');
+    } else if (c === 'blog') {
+      navigate('/blog');
+      addOutput('Navigating to /blog...', 'success');
     } else if (c === 'contact' || c === 'hire') {
       addOutput('Navigating to /contact...', 'success');
       setTimeout(() => navigate('/contact'), 600);
     } else if (c === 'clear') {
       setOutput([]);
       return;
-    } else if (c === 'theme dark') {
-      document.body.className = '';
-      localStorage.setItem('theme', 'dark');
-      addOutput('Theme set to dark.', 'success');
-    } else if (c === 'theme light') {
-      document.body.className = 'light-mode';
-      localStorage.setItem('theme', 'light');
-      addOutput('Theme set to light.', 'success');
+    } else if (c === 'theme dark' || c === 'theme light') {
+      // go through app state so the toggle bulb and saved preference stay in sync
+      const next = c.endsWith('light') ? 'light' : 'dark';
+      setTheme(next);
+      addOutput(`Theme set to ${next}.`, 'success');
     } else if (c === 'sudo dance') {
       triggerBotCommand({ type: 'dance' });
       addOutput('Bot dance mode activated 💃', 'success');
@@ -247,7 +241,20 @@ function TerminalInput() {
     } else {
       addOutput(`bash: ${raw}: command not found. Type 'help' for available commands.`, 'error');
     }
-  }, [addOutput, navigate, triggerBotCommand]);
+  }, [addOutput, navigate, triggerBotCommand, setTheme]);
+
+  /** Mirror the native caret + horizontal scroll onto the rendered prompt text. */
+  const syncCaret = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    setCaret(el.selectionStart ?? el.value.length);
+    if (displayRef.current) displayRef.current.scrollLeft = el.scrollLeft;
+  }, []);
+
+  // Programmatic value changes (history, autocomplete) move the caret to the end
+  useLayoutEffect(() => {
+    syncCaret();
+  }, [input, syncCaret]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -272,7 +279,6 @@ function TerminalInput() {
   };
 
   const konami = useRef([]);
-  const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
 
   useEffect(() => {
     const handleKonami = (e) => {
@@ -302,18 +308,30 @@ function TerminalInput() {
         )}
         <div className="terminal-prompt-row">
           <span className="prompt-prefix">akash@portfolio:~$</span>
-          <input
-            ref={inputRef}
-            className="terminal-prompt-input"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            spellCheck={false}
-            autoCapitalize="none"
-            autoComplete="off"
-            aria-label="Terminal command input"
-          />
-          <span className="prompt-cursor" />
+          <div className={`prompt-field ${focused ? 'is-focused' : ''}`}>
+            <input
+              ref={inputRef}
+              className="terminal-prompt-input"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onSelect={syncCaret}
+              onKeyUp={syncCaret}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              spellCheck={false}
+              autoCapitalize="none"
+              autoComplete="off"
+              aria-label="Terminal command input"
+            />
+            <span ref={displayRef} className="prompt-display" aria-hidden="true">
+              {input.slice(0, caret)}
+              <span key={`${input.length}-${caret}`} className="prompt-cursor">
+                {input[caret] && input[caret] !== ' ' ? input[caret] : '\u00a0'}
+              </span>
+              {input.slice(caret + 1)}
+            </span>
+          </div>
         </div>
       </div>
     </>

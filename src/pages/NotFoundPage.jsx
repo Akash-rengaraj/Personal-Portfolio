@@ -147,7 +147,7 @@ function NotFoundPage() {
       case 'clear':
         setHistory([]);
         return;
-      case 'matrix':
+      case 'matrix': {
         const isMatrix = document.body.classList.contains('matrix-mode');
         if (isMatrix) {
           document.body.classList.remove('matrix-mode');
@@ -157,6 +157,7 @@ function NotFoundPage() {
           response = [{ type: 'info', text: 'Matrix mode activated. Follow the white rabbit...' }];
         }
         break;
+      }
       case 'guess':
         setSecretNumber(Math.floor(Math.random() * 100) + 1);
         setGameState('guess');
@@ -179,6 +180,7 @@ function NotFoundPage() {
       case './do_not_run.sh':
       case 'bash do_not_run.sh':
       case 'sh do_not_run.sh':
+      {
         response = [{ type: 'error', text: 'FATAL ERROR: System corruption imminent! (Just kidding)' }];
         const el = document.getElementById('404');
         if (el) {
@@ -186,6 +188,7 @@ function NotFoundPage() {
           setTimeout(() => el.classList.remove('shake-intense'), 500);
         }
         break;
+      }
       case 'whoami':
         response = [{ type: 'info', text: 'A lost internet traveler wandering through the digital void.' }];
         break;
@@ -236,6 +239,7 @@ function NotFoundPage() {
     <>
       <Helmet>
         <title>404 — akashr.dev</title>
+        <meta name="robots" content="noindex, follow" />
       </Helmet>
       <div className="page active not-found-page" id="404" onClick={handleClick}>
         <div className="not-found-content">

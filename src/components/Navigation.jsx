@@ -6,18 +6,40 @@ const githubIcon = (
   </svg>
 );
 
+/*
+ * `label` is what desktop shows (unchanged); on phones the nav becomes a
+ * bottom tab bar that shows `icon` + `short` instead. Only one label is ever
+ * displayed, so the accessible name always matches the visible text. `secondary` links are
+ * dropped from the phone tab bar (they're reachable from Home and Contact).
+ */
+const LINKS = [
+  { to: '/', label: 'home', short: 'home', icon: 'fa-solid fa-house', end: true },
+  { to: '/about', label: 'about', short: 'about', icon: 'fa-solid fa-user' },
+  { to: '/resume-view', label: 'resume', short: 'resume', icon: 'fa-solid fa-file-lines', secondary: true },
+  { to: '/projects', label: 'projects', short: 'work', icon: 'fa-solid fa-folder-open' },
+  { to: '/achievements', label: 'achievements', short: 'wins', icon: 'fa-solid fa-trophy' },
+  { to: '/blog', label: 'blog', short: 'blog', icon: 'fa-solid fa-pen-nib' },
+  { to: '/contact', label: 'links & contacts', short: 'contact', icon: 'fa-solid fa-paper-plane' },
+];
+
 function Navigation() {
   return (
-    <nav className="nav">
-      <a href="https://github.com/Akash-rengaraj" target="_blank" rel="noopener noreferrer" className="nav-external">
+    <nav className="nav" aria-label="Main">
+      <a href="https://github.com/Akash-rengaraj" target="_blank" rel="noopener noreferrer" className="nav-external nav-secondary">
         {githubIcon}github
       </a>
-      <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>home</NavLink>
-      <NavLink to="/about" className={({ isActive }) => isActive ? 'active' : ''}>about</NavLink>
-      <NavLink to="/resume-view" className={({ isActive }) => isActive ? 'active' : ''}>resume</NavLink>
-      <NavLink to="/projects" className={({ isActive }) => isActive ? 'active' : ''}>projects</NavLink>
-      <NavLink to="/achievements" className={({ isActive }) => isActive ? 'active' : ''}>achievements</NavLink>
-      <NavLink to="/contact" className={({ isActive }) => isActive ? 'active' : ''}>links & contacts</NavLink>
+      {LINKS.map(({ to, label, short, icon, end, secondary }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) => [isActive && 'active', secondary && 'nav-secondary'].filter(Boolean).join(' ')}
+        >
+          <i className={`nav-icon ${icon}`} aria-hidden="true" />
+          <span className="nav-label-full">{label}</span>
+          <span className="nav-label-short">{short}</span>
+        </NavLink>
+      ))}
     </nav>
   );
 }

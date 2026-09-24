@@ -40,3 +40,14 @@ export const skillsData = [
 ];
 
 export const hackerrankBadgesData = ["Python(Basics)", "Problem Solving(Basics)", "CSS(Basics)", "React(Basics)"];
+/* Day-to-day stack, grouped for the About page and the `cat skills.txt` command */
+export const techStack = [
+    { group: "frontend", items: ["React 19", "TypeScript", "Next.js", "Framer Motion", "GSAP", "Tailwind CSS"] },
+    { group: "backend", items: ["Node.js", "Express", "FastAPI", "Python"] },
+    { group: "data", items: ["MongoDB", "PostgreSQL", "Firebase", "Hive", "ChromaDB"] },
+    { group: "ai / ml", items: ["scikit-learn", "TensorFlow (basics)", "RAG pipelines", "CrewAI"] },
+    { group: "mobile", items: ["Flutter", "Dart", "ARCore"] },
+    { group: "iot", items: ["Arduino", "Raspberry Pi", "ESP32"] },
+    { group: "security", items: ["Google Cybersecurity cert", "CTFs"] },
+    { group: "tools", items: ["Git", "Vite", "Docker (basics)", "Vercel", "Railway"] },
+];

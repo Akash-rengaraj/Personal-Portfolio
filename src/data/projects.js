@@ -1,12 +1,16 @@
 export const projectsData = [
   {
     "slug": "neo",
+    "category": "AI / ML",
+    "featured": true,
     "title": "Neo — Interactive Defensive Analytics & Auditing Studio",
     "tagline": "A Multi-Agent DevSecOps Threat Intelligence Framework.",
     "tech": ["Python", "Streamlit", "CrewAI", "ChromaDB"],
     "preview": {
       "type": "video",
       "src": "/videos/project_disp/neo-preview.mp4",
+
+      "poster": "/videos/project_disp/neo-preview-poster.webp",
       "alt": "Neo System Workflow Diagram"
     },
     "description": [
@@ -35,12 +39,12 @@ export const projectsData = [
     "gallery": [
       {
         "type": "image",
-        "src": "/images/project_previews/neo-workflow-diagram-v1.png",
+        "src": "/images/project_previews/neo-workflow-diagram-v1.webp",
         "alt": "Neo Workflow Diagram"
       },
       {
         "type": "image",
-        "src": "/images/project_previews/neo-poster.png",
+        "src": "/images/project_previews/neo-poster.webp",
         "alt": "Neo Project Poster"
       }
     ],
@@ -48,12 +52,15 @@ export const projectsData = [
 },
   {
     slug: "arify",
+    category: "Mobile & AR",
     title: "ARify — 3D Room Scanning",
     tagline: "An open-source pipeline to AR-ify any physical space and share it with the world.",
     tech: ["Flutter", "FastAPI", "Android ARCore", "Unity (WebXR)"],
     preview: {
       type: "video",
       src: "/videos/project_disp/arify-preview.mp4",
+
+      poster: "/videos/project_disp/arify-preview-poster.webp",
       alt: "ARify App Preview"
     },
     description: [
@@ -84,12 +91,15 @@ export const projectsData = [
   },
     {
       slug: "get-up",
+      category: "Mobile & AR",
       title: "Get Up — All-in-One Student App",
       tagline: "A Flutter productivity companion that helps students track habits, attendance, and finances.",
       tech: ["Flutter", "Hive", "fl_chart", "confetti", "intl"],
       preview: {
         type: "video",
-        src: "/videos/project_disp/get_up_preview.webm",
+        src: "/videos/project_disp/get_up_preview.mp4",
+
+        poster: "/videos/project_disp/get_up_preview-poster.webp",
         alt: "Get Up App Preview"
       },
       description: [
@@ -119,12 +129,15 @@ export const projectsData = [
     },
     {
       slug: "jewellery-ecommerce",
+      category: "Full-stack",
       title: "Full-Stack Jewellery E-Commerce",
       tagline: "A production-grade e-commerce platform with real-time inventory and JWT auth — built solo end-to-end.",
       tech: ["React", "TypeScript", "Vite", "Tailwind CSS", "GSAP", "Node.js", "Express", "MongoDB"],
       preview: {
         type: "video",
         src: "/videos/project_disp/jewellery-shop-website-preview.mp4",
+
+        poster: "/videos/project_disp/jewellery-shop-website-preview-poster.webp",
         alt: "Sanjana Creations Preview"
       },
       description: [
@@ -155,12 +168,15 @@ export const projectsData = [
     },
     {
       slug: "icecream-website",
+      category: "Frontend",
       title: "Millora — Premium Ice Cream Brand Site",
       tagline: "A buttery-smooth frontend with Lenis scroll, Framer Motion, and a fully functional shopping cart.",
       tech: ["React 19", "TypeScript", "Vite", "Framer Motion", "Lenis", "CSS Modules"],
       preview: {
         type: "video",
         src: "/videos/project_disp/icecream-website-preview.mp4",
+
+        poster: "/videos/project_disp/icecream-website-preview-poster.webp",
         alt: "Millora Website Preview"
       },
       description: [
@@ -191,12 +207,15 @@ export const projectsData = [
     },
     {
       slug: "portfolio",
+      category: "Frontend",
       title: "Terminal Portfolio — akashr.dev",
       tagline: "A hacker-aesthetic portfolio with a real terminal emulator, wandering bot, and 30+ easter eggs.",
       tech: ["React 19", "Vite", "JavaScript", "Firebase", "react-router-dom"],
       preview: {
         type: "video",
         src: "/videos/project_disp/portfolio-preview.mp4",
+
+        poster: "/videos/project_disp/portfolio-preview-poster.webp",
         alt: "Portfolio Preview"
       },
       description: [

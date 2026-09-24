@@ -13,10 +13,10 @@ export const hackathonsData = [
         "Smart route optimization for blocked roads"
       ],
       photos: [
-        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-1.jpg",
-        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-2.jpg",
-        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-3.jpg",
-        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-main.jpg"
+        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-1.webp",
+        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-2.webp",
+        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-3.webp",
+        "/images/Hackathon_imgs/HackIndia_Spark1/HackIndia 2025 hackathon-main.webp"
       ]
     }
     // Add more hackathons here...

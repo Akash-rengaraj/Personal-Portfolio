@@ -10,16 +10,29 @@ function ResumeViewPage() {
         <meta name="robots" content="noindex" />
       </Helmet>
       <div style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#323639', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', backgroundColor: '#323639', borderBottom: '1px solid #202124' }}>
+        <div className="resume-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', backgroundColor: '#323639', borderBottom: '1px solid #202124' }}>
           <Link to="/" style={{ color: '#e8eaed', textDecoration: 'none', fontFamily: '"Fira Code", monospace', fontSize: '0.9rem', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = '#00ffff'} onMouseLeave={(e) => e.target.style.color = '#e8eaed'}>
             ← back to portfolio
           </Link>
-          <a href="/Akash_Rengaraj_Resume.pdf" download="Akash_Rengaraj_Resume.pdf" style={{ color: '#e8eaed', textDecoration: 'none', fontFamily: '"Fira Code", monospace', fontSize: '0.9rem', backgroundColor: '#424649', padding: '8px 16px', borderRadius: '4px', border: '1px solid #5f6368', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.target.style.backgroundColor = '#525659'; e.target.style.borderColor = '#00ffff'; e.target.style.color = '#00ffff'; }} onMouseLeave={(e) => { e.target.style.backgroundColor = '#424649'; e.target.style.borderColor = '#5f6368'; e.target.style.color = '#e8eaed'; }}>
+          <a className="resume-top-download" href="/Akash_Rengaraj_Resume.pdf" download="Akash_Rengaraj_Resume.pdf" style={{ color: '#e8eaed', textDecoration: 'none', fontFamily: '"Fira Code", monospace', fontSize: '0.9rem', backgroundColor: '#424649', padding: '8px 16px', borderRadius: '4px', border: '1px solid #5f6368', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.target.style.backgroundColor = '#525659'; e.target.style.borderColor = '#00ffff'; e.target.style.color = '#00ffff'; }} onMouseLeave={(e) => { e.target.style.backgroundColor = '#424649'; e.target.style.borderColor = '#5f6368'; e.target.style.color = '#e8eaed'; }}>
             [ ↓ download PDF ]
           </a>
         </div>
 
-        <div style={{ flex: 1, width: '100%', height: '100%', padding: 0, margin: 0 }}>
+        {/* phones can't render PDFs inline reliably, so they get a card instead of the iframe */}
+        <div className="resume-mobile">
+          <i className="fa-solid fa-file-lines resume-mobile-icon" aria-hidden="true" />
+          <h1 className="resume-mobile-title">Akash Rengaraj — Resume</h1>
+          <p className="resume-mobile-sub">AI &amp; Data Science student · full-stack developer · PDF, 1 page</p>
+          <a className="resume-mobile-btn is-primary" href="/Akash_Rengaraj_Resume.pdf" target="_blank" rel="noopener noreferrer">
+            <i className="fa-solid fa-up-right-from-square" aria-hidden="true" /> open PDF
+          </a>
+          <a className="resume-mobile-btn" href="/Akash_Rengaraj_Resume.pdf" download="Akash_Rengaraj_Resume.pdf">
+            <i className="fa-solid fa-download" aria-hidden="true" /> download
+          </a>
+        </div>
+
+        <div className="resume-frame" style={{ flex: 1, width: '100%', height: '100%', padding: 0, margin: 0 }}>
           <iframe 
             className="resume-pdf-iframe"
             src="/Akash_Rengaraj_Resume.pdf#view=FitH" 

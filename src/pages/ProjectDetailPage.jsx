@@ -49,7 +49,7 @@ function ProjectDetailPage() {
           <div className="project-detail-hero">
             <div className="project-detail-media">
               {project.preview.type === 'video' ? (
-                <video autoPlay muted loop playsInline className="detail-video" key={project.preview.src}>
+                <video autoPlay muted loop playsInline className="detail-video" key={project.preview.src} poster={project.preview.poster} preload="auto">
                   <source src={project.preview.src} type={project.preview.src.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
                 </video>
               ) : (
@@ -84,6 +84,16 @@ function ProjectDetailPage() {
 
           {/* Case Study Sections */}
           <div className="case-study-grid">
+            {project.description?.length > 0 && (
+              <div className="case-section case-overview">
+                <div className="case-label">00 / overview</div>
+                <h2 className="case-title">What it is</h2>
+                <div
+                  className="case-body case-overview-body"
+                  dangerouslySetInnerHTML={{ __html: project.description.join(' ') }}
+                />
+              </div>
+            )}
             <CaseSection label="01 / challenge" title="The Problem" content={project.challenge} />
             <CaseSection label="02 / solution" title="How I Solved It" content={project.solution} />
             <div className="case-section case-impact">
@@ -107,11 +117,11 @@ function ProjectDetailPage() {
                   {project.gallery.map((media, i) => (
                     <div key={i} className="gallery-item">
                       {media.type === 'video' ? (
-                        <video autoPlay muted loop playsInline className="gallery-video">
+                        <video autoPlay muted loop playsInline className="gallery-video" preload="metadata">
                           <source src={media.src} type={media.src.endsWith('.webm') ? 'video/webm' : 'video/mp4'} />
                         </video>
                       ) : (
-                        <img src={media.src} alt={media.alt || 'Project media'} className="gallery-image" />
+                        <img src={media.src} alt={media.alt || 'Project media'} className="gallery-image" loading="lazy" decoding="async" />
                       )}
                     </div>
                   ))}

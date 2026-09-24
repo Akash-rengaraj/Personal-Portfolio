@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 
 export const AppContext = createContext({
   theme: 'dark',
+  setTheme: () => {},
   viewCount: 0,
   triggerBotCommand: () => {},
 });
