@@ -234,6 +234,11 @@ function MagneticBtn({ to, className, children }) {
   );
 }
 
+/** Starts downloading the game chunk (three.js) as soon as someone shows interest. */
+const prefetchDrive = () => {
+  import('./DrivePage').catch(() => {});
+};
+
 function HeroCTAs() {
   return (
     <div className="hero-ctas hero-rise" style={{ '--d': 5 }}>
@@ -245,6 +250,18 @@ function HeroCTAs() {
       <Link to="/projects" className="cta-btn cta-secondary">
         <span className="cta-bracket">[</span>
         <span className="cta-arrow">→</span> view my work
+        <span className="cta-bracket">]</span>
+      </Link>
+      <Link
+        to="/drive"
+        className="cta-btn cta-drive"
+        onMouseEnter={prefetchDrive}
+        onFocus={prefetchDrive}
+        onTouchStart={prefetchDrive}
+        aria-label="Take a drive: play Zen Drive, a relaxing 3D driving game"
+      >
+        <span className="cta-bracket">[</span>
+        <span className="cta-arrow">▶</span> take a drive
         <span className="cta-bracket">]</span>
       </Link>
       <a href="/Akash_Rengaraj_Resume.pdf" download className="cta-btn cta-ghost">

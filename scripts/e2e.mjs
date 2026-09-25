@@ -180,6 +180,45 @@ async function main() {
     await page.close();
   });
 
+  /* ── Zen Drive ── */
+  await check('home never downloads three.js until the drive CTA is wanted', async () => {
+    const page = await openPage(desktop);
+    const threeRequests = [];
+    page.on('request', req => { if (/\/three-[\w-]+\.js$/.test(req.url())) threeRequests.push(req.url()); });
+    await page.goto(BASE, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(3500); // past the idle prefetch
+    assert(threeRequests.length === 0, 'three.js was fetched on the home page');
+    await page.locator('.cta-drive').click();
+    await page.waitForURL(/\/drive\?seed=\d+/);
+    assert(await page.locator('canvas.zd-canvas').count() === 1, 'no game canvas');
+    await page.close();
+  });
+
+  await check('zen drive: accelerate, pause, new road', async () => {
+    const page = await openPage(desktop);
+    const warnings = [];
+    page.on('console', m => { if (/WebGL contexts|Context Lost/i.test(m.text())) warnings.push(m.text()); });
+    await page.goto(`${BASE}/drive?seed=4242`, { waitUntil: 'networkidle' });
+    await page.locator('.zd-start').click();
+    await page.keyboard.down('KeyW');
+    await page.waitForTimeout(3500);
+    await page.keyboard.up('KeyW');
+    const speed = Number(await page.locator('.zd-speed-value').innerText());
+    assert(speed > 20, `speed only ${speed} km/h after 3.5 s of throttle`);
+    await page.keyboard.press('Escape');
+    await page.locator('.zd-menu').waitFor();
+    await page.getByRole('button', { name: /new random road/ }).click();
+    await page.waitForFunction(() => !location.search.includes('seed=4242'));
+    // leave and come back a few times: engines must be disposed, not stacked
+    for (let i = 0; i < 4; i++) {
+      await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+      await page.goto(`${BASE}/drive?seed=${10 + i}`, { waitUntil: 'networkidle' });
+    }
+    assert(warnings.length === 0, warnings.join(' | '));
+    assert(page.errors.length === 0, page.errors.join(' | '));
+    await page.close();
+  });
+
   await check('view counter never loads Firebase before the page is interactive', async () => {
     const html = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
     assert(!/firebase/.test(html.match(/<head>[\s\S]*<\/head>/)[0]), 'firebase chunk is preloaded in <head>');
@@ -211,6 +250,22 @@ async function main() {
       await page.close();
     });
   }
+
+  await check('zen drive on a phone: touch pads, no overflow', async () => {
+    const page = await openPage(phone);
+    await page.goto(`${BASE}/drive?seed=77`, { waitUntil: 'networkidle' });
+    await page.locator('.zd-start').tap();
+    await page.locator('.zd-touch').waitFor();
+    assert(await page.getByRole('button', { name: 'Steer left' }).isVisible(), 'steer pad missing');
+    await page.waitForTimeout(2500);
+    const speed = Number(await page.locator('.zd-speed-value').innerText());
+    assert(speed > 10, `touch cruise didn't move the car (${speed} km/h)`);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    assert(overflow <= 0, `horizontal overflow of ${overflow}px`);
+    assert(page.errors.length === 0, page.errors.join(' | '));
+    await page.close();
+  });
+
   await phone.close();
   await browser.close();
 

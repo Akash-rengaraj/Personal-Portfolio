@@ -384,6 +384,45 @@ ${intro()}
     body: `<h1>Résumé — ${escapeHtml(profile.name)}</h1><p><a href="${profile.resume}">Download the PDF résumé</a>.</p>${educationList()}<h2>Skills</h2>${stackList()}`,
   });
 
+  add({
+    route: '/drive',
+    title: `Zen Drive — a relaxing endless drive · akashr.dev`,
+    description: `A calm 3D driving game in the browser by ${profile.name}: endless procedurally generated roads, day and night, four biomes, cruise mode and ambient music. Built with three.js.`,
+    og: await ogImageFor('drive'),
+    priority: '0.5',
+    changefreq: 'monthly',
+    ld: [
+      {
+        '@type': 'VideoGame',
+        name: 'Zen Drive',
+        url: canonicalFor('/drive'),
+        description: 'A relaxing, endless 3D driving game with procedurally generated roads, biomes and a day/night cycle.',
+        genre: ['Driving', 'Casual', 'Relaxation'],
+        gamePlatform: 'Web browser',
+        applicationCategory: 'Game',
+        operatingSystem: 'Any (WebGL)',
+        playMode: 'SinglePlayer',
+        author: { '@id': PERSON_ID },
+        isAccessibleForFree: true,
+      },
+      breadcrumbs([{ name: 'Zen Drive', route: '/drive' }]),
+    ],
+    body: `
+<h1>Zen Drive</h1>
+<p>A relaxing 3D driving game that runs in the browser. There is no timer, no score and no crashes — just an endless, randomly generated road winding through green meadows, autumn forests, desert dunes and snowy pines while the sun sets and the stars come out.</p>
+<h2>How it works</h2>
+<ul>
+  <li>The road is generated on the fly from a seed, so every road can be shared with a link like <code>/drive?seed=4242</code>.</li>
+  <li>Terrain, trees and street lamps stream in around the car in chunks and are built under a per-frame time budget, so driving never stutters.</li>
+  <li>Arcade physics tuned to feel good: grip-limited steering, gentle handbrake drifts, suspension that follows the ground.</li>
+  <li>Cruise mode keeps the car in its lane (on the left, as in India) so you can just watch the scenery.</li>
+  <li>All sound — engine, wind, tyres and the ambient music — is synthesised live with the Web Audio API.</li>
+</ul>
+<h2>Controls</h2>
+<p>W / S or the arrow keys to drive, A / D to steer, Space to drift, Z for cruise, C to change camera, P for photo mode, Esc to pause. On phones: on-screen pads or tilt steering. Gamepads work too.</p>
+<p>Built with three.js by <a href="/about">${escapeHtml(profile.name)}</a>.</p>`,
+  });
+
   return routes;
 }
 
@@ -505,6 +544,7 @@ ${posts.map(p => `- [${p.title}](${SITE}/blog/${p.slug}) (${p.date}): ${p.summar
 - [About](${SITE}/about): background, education, leadership, stack and certifications
 - [Achievements](${SITE}/achievements): hackathons, certifications, milestones
 - [Contact](${SITE}/contact): email and social links
+- [Zen Drive](${SITE}/drive): a relaxing endless 3D driving game built with three.js (procedural roads, biomes, day/night)
 - [Résumé (PDF)](${SITE}${profile.resume})
 
 ## Optional

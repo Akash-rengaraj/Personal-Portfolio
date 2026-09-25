@@ -9,6 +9,7 @@ const VENDOR_GROUPS = [
   ['router', /[\\/]node_modules[\\/](react-router|react-router-dom|@remix-run)[\\/]/],
   ['helmet', /[\\/]node_modules[\\/](react-helmet-async|react-fast-compare|invariant|shallowequal)[\\/]/],
   ['firebase', /[\\/]node_modules[\\/](firebase|@firebase|idb|tslib)[\\/]/],
+  ['three', /[\\/]node_modules[\\/]three[\\/]/],
 ]
 
 const BLOG_MODULE = 'virtual:blog-posts'

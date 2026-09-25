@@ -29,6 +29,8 @@ const BlogPage = lazy(pageImports.blog);
 const BlogPostPage = lazy(pageImports.blogPost);
 const ResumeViewPage = lazy(pageImports.resume);
 const NotFoundPage = lazy(pageImports.notFound);
+/* The game pulls in three.js, so it is never part of the idle prefetch */
+const DrivePage = lazy(() => import('./pages/DrivePage'));
 
 /** Run `task` when the browser is idle (falls back to a timeout). */
 const whenIdle = (task, timeout = 2000) =>
@@ -115,6 +117,7 @@ function App() {
           <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/contact" element={<LinksPage />} />
         </Route>
+        <Route path="/drive" element={<Suspense fallback={<PageLoader fullscreen />}><DrivePage /></Suspense>} />
         <Route path="/resume-view" element={<Suspense fallback={<PageLoader fullscreen />}><ResumeViewPage /></Suspense>} />
         <Route path="*" element={<Suspense fallback={<PageLoader fullscreen />}><NotFoundPage /></Suspense>} />
       </Routes>

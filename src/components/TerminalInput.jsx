@@ -43,7 +43,7 @@ const QUOTES = [
 
 const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
 
-const AUTOCOMPLETE = ['help', 'whoami', 'ls', 'cat bio.txt', 'cat skills.txt', 'cat resume.pdf', 'resume-view', 'projects', 'about', 'achievements', 'contact', 'hire', 'blog', 'clear', 'theme dark', 'theme light', 'sudo dance', 'sudo hack', 'coffee', 'joke', 'quote', 'date', 'weather', 'github', 'linkedin', 'email', 'secret', 'cat .easter-eggs'];
+const AUTOCOMPLETE = ['help', 'whoami', 'ls', 'cat bio.txt', 'cat skills.txt', 'cat resume.pdf', 'resume-view', 'projects', 'about', 'achievements', 'contact', 'hire', 'blog', 'drive', 'clear', 'theme dark', 'theme light', 'sudo dance', 'sudo hack', 'coffee', 'joke', 'quote', 'date', 'weather', 'github', 'linkedin', 'email', 'secret', 'cat .easter-eggs'];
 
 function TerminalInput() {
   const [input, setInput] = useState('');
@@ -107,6 +107,7 @@ function TerminalInput() {
         '  achievements    — navigate to achievements',
         '  contact / hire  — navigate to contact page',
         '  blog            — read the devlog',
+        '  drive [--seed N] — take a relaxing 3D drive 🚗',
         '  theme dark/light — toggle theme',
         '  sudo dance      — make the bot dance',
         '  sudo hack       — ???',
@@ -182,6 +183,11 @@ function TerminalInput() {
       addOutput(['Projects:', ...projectsData.map((p, i) => `  ${i + 1}. ${p.title}`)], 'info');
       setTimeout(() => navigate('/projects'), 1200);
       addOutput('Navigating to /projects...', 'success');
+    } else if (c === 'drive' || c.startsWith('drive ')) {
+      const seed = c.match(/--seed\s+(\d+)/)?.[1];
+      triggerBotCommand({ type: 'speak', text: 'Vroom! Enjoy the drive 🚗', mood: 'HAPPY' });
+      addOutput(`Starting zen-drive${seed ? ` --seed ${seed}` : ''}…`, 'success');
+      setTimeout(() => navigate(seed ? `/drive?seed=${seed}` : '/drive'), 700);
     } else if (c === 'blog') {
       navigate('/blog');
       addOutput('Navigating to /blog...', 'success');
