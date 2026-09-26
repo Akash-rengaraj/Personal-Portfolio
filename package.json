@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "og": "node scripts/og-images.mjs",
-    "test:e2e": "node scripts/e2e.mjs"
+    "test:e2e": "node scripts/e2e.mjs",
+    "test:drive": "node scripts/playtest.mjs"
   },
   "dependencies": {
     "firebase": "^12.1.0",

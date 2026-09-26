@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { DriveEngine, hasWebGL } from '../game/engine';
+import { DriveEngine, FPS_OPTIONS, hasWebGL } from '../game/engine';
 import { PAINTS } from '../game/carModel';
+import { TERRAIN_OPTIONS } from '../game/biomes';
 import { parseSeed, randomSeed } from '../game/rng';
 
 const SETTINGS_KEY = 'zen-drive-settings';
-const DEFAULT_SETTINGS = { paint: PAINTS[0].id, quality: 'auto', muted: false, music: true };
+const DEFAULT_SETTINGS = {
+  paint: PAINTS[0].id, quality: 'auto', fps: 'auto', muted: false, music: true, transmission: 'auto', assists: 'full', terrain: 'mixed', pops: false,
+};
+const ASSIST_LABELS = { full: 'full', sport: 'sport', off: 'drift (off)' };
+const QUALITY_NOTES = {
+  low: '30 fps · short view · light trees, no clouds or shadows — for older laptops and phones',
+  medium: '60 fps · clouds · mid view distance · detailed trees close by',
+  high: '60 fps · far view · shadows, birds, ferns and logs — for gaming PCs',
+};
+const FPS_LABELS = { auto: 'auto', 30: '30', 60: '60', max: 'max' };
 
 function loadSettings() {
   try {
@@ -32,7 +42,10 @@ const KEY_HELP = [
   ['W / ↑', 'accelerate'],
   ['S / ↓', 'brake · reverse'],
   ['A D / ← →', 'steer'],
-  ['space', 'handbrake drift'],
+  ['space', 'handbrake'],
+  ['E / Q', 'shift up / down'],
+  ['T', 'auto ⇄ manual gearbox'],
+  ['B', 'pops & bangs'],
   ['Z', 'cruise (autopilot)'],
   ['C', 'camera'],
   ['P', 'photo mode'],
@@ -72,21 +85,28 @@ function Compass({ heading }) {
   );
 }
 
-function Hud({ stats, onPause, onCamera, onMute, touch }) {
+/** Runs a HUD action, then hands keyboard focus straight back to the game. */
+const hudClick = (fn) => (e) => {
+  e.currentTarget.blur();
+  fn();
+};
+
+function Hud({ stats, onPause, onCamera, onMute, touch, notice }) {
   return (
     <div className="zd-hud">
+      {notice && <div className="zd-notice" role="status">{notice}</div>}
       <div className="zd-hud-top">
         <div className="zd-chip">
           <span className="zd-prompt">$</span> zen-drive <span className="zd-dim">--seed {stats.seed}</span>
         </div>
         <div className="zd-hud-actions">
-          <button type="button" className="zd-icon-btn" onClick={onCamera} aria-label={`Camera: ${stats.camera}. Switch camera`}>
+          <button type="button" className="zd-icon-btn" onClick={hudClick(onCamera)} aria-label={`Camera: ${stats.camera}. Switch camera`}>
             <i className="fa-solid fa-video" aria-hidden="true" />
           </button>
-          <button type="button" className="zd-icon-btn" onClick={onMute} aria-label={stats.muted ? 'Unmute' : 'Mute'}>
+          <button type="button" className="zd-icon-btn" onClick={hudClick(onMute)} aria-label={stats.muted ? 'Unmute' : 'Mute'}>
             <i className={`fa-solid ${stats.muted ? 'fa-volume-xmark' : 'fa-volume-low'}`} aria-hidden="true" />
           </button>
-          <button type="button" className="zd-icon-btn" onClick={onPause} aria-label="Pause menu">
+          <button type="button" className="zd-icon-btn" onClick={hudClick(onPause)} aria-label="Pause menu">
             <i className="fa-solid fa-pause" aria-hidden="true" />
           </button>
         </div>
@@ -98,16 +118,25 @@ function Hud({ stats, onPause, onCamera, onMute, touch }) {
       </div>
 
       <div className={`zd-dash ${touch ? 'is-touch' : ''}`}>
+        <div className="zd-tach" aria-hidden="true">
+          <span className="zd-tach-fill" style={{ transform: `scaleX(${Math.min(1, stats.rpmNorm)})` }} />
+          <span className="zd-tach-red" />
+        </div>
         <Compass heading={stats.heading} />
         <div className="zd-speed">
-          <span className="zd-speed-value">{String(stats.speed).padStart(3, ' ')}</span>
+          <span className="zd-speed-value">{String(stats.speed).padStart(3, '\u2007')}</span>
           <span className="zd-speed-unit">km/h</span>
         </div>
         <div className="zd-dash-side">
-          <span className="zd-gear">{stats.gear}</span>
-          <span className="zd-dim">{stats.distance.toFixed(1)} km</span>
+          <span className={`zd-gear ${stats.shiftLight ? 'is-shift' : ''}`}>{stats.gear}</span>
+          <span className="zd-dim">{stats.transmission === 'auto' ? 'auto' : 'manual'}</span>
+        </div>
+        <div className="zd-dash-side zd-dash-rpm">
+          <span>{String(stats.rpm).padStart(4, '\u2007')}</span>
+          <span className="zd-dim">rpm · {stats.distance.toFixed(1)} km</span>
         </div>
       </div>
+      {stats.drifting && <div className="zd-drift" aria-hidden="true">drift</div>}
 
       {stats.cruise && (
         <div className={`zd-cruise ${touch ? 'is-touch' : ''}`} role="status">
@@ -141,7 +170,7 @@ function Intro({ seed, touch, onStart }) {
         <p className="zd-line zd-dim">generating endless road… ok</p>
         <p className="zd-line zd-dim">planting forests… ok</p>
         <h1 id="zd-title" className="zd-title">zen drive</h1>
-        <p className="zd-lede">No timer, no score, no crashes. Just you, a winding road and the sunset. Drive as long as you like.</p>
+        <p className="zd-lede">No timer, no score, no crashes. A 600 km/h GT car with real tyre physics, an endless winding road and the sunset. Drive as long as you like.</p>
         {touch ? (
           <ul className="zd-keys zd-keys-touch">
             <li><kbd>◀ ▶</kbd> steer</li>
@@ -159,6 +188,25 @@ function Intro({ seed, touch, onStart }) {
         </button>
         <Link to="/" className="zd-back">← back to portfolio</Link>
       </div>
+    </div>
+  );
+}
+
+/** Row of toggle buttons for a single choice. */
+function Segmented({ options, value, onChange, labels = {}, wrap = false }) {
+  return (
+    <div className={`zd-segmented ${wrap ? 'is-wrap' : ''}`}>
+      {options.map(option => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={value === option}
+          className={value === option ? 'is-active' : ''}
+          onClick={() => onChange(option)}
+        >
+          {labels[option] ?? option}
+        </button>
+      ))}
     </div>
   );
 }
@@ -197,27 +245,53 @@ function PauseMenu({ stats, settings, touch, tilt, onResume, onNewRoad, onReset,
         </fieldset>
 
         <fieldset className="zd-field">
+          <legend>gearbox</legend>
+          <Segmented options={['auto', 'manual']} value={stats.transmission} onChange={v => onSetting('transmission', v)} />
+          <p className="zd-note">{touch ? 'manual: use the + / − buttons' : 'E / Q shift up and down · T switches'}</p>
+        </fieldset>
+
+        <fieldset className="zd-field">
+          <legend>driving assists</legend>
+          <Segmented options={['full', 'sport', 'off']} labels={ASSIST_LABELS} value={settings.assists} onChange={v => onSetting('assists', v)} />
+          <p className="zd-note">
+            {settings.assists === 'full' && 'traction control, ABS and stability control on'}
+            {settings.assists === 'sport' && 'ABS only — the rear steps out under power'}
+            {settings.assists === 'off' && 'no assists: throttle and handbrake drifts are all you'}
+          </p>
+        </fieldset>
+
+        <fieldset className="zd-field">
+          <legend>terrain</legend>
+          <Segmented options={TERRAIN_OPTIONS.map(t => t.id)} value={settings.terrain} onChange={v => onSetting('terrain', v)} wrap />
+          <p className="zd-note">{settings.terrain === 'mixed' ? 'changes every 1.5 km as you drive' : 'this landscape everywhere'}</p>
+        </fieldset>
+
+        <fieldset className="zd-field">
           <legend>graphics</legend>
-          <div className="zd-segmented">
-            {['auto', 'low', 'medium', 'high'].map(q => (
-              <button
-                key={q}
-                type="button"
-                aria-pressed={settings.quality === q}
-                className={settings.quality === q ? 'is-active' : ''}
-                onClick={() => onSetting('quality', q)}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-          {settings.quality === 'auto' && <p className="zd-note">auto picked: {stats.quality}</p>}
+          <Segmented options={['auto', 'low', 'medium', 'high']} value={settings.quality} onChange={v => onSetting('quality', v)} />
+          {settings.quality === 'auto' && (
+            <p className="zd-note">
+              auto picked <strong>{stats.quality}</strong> — {[stats.detected?.gpu, stats.detected?.reason].filter(Boolean).join(', ')}
+              {stats.detected?.tier !== stats.quality && ' · stepped down to keep it smooth'}
+            </p>
+          )}
+          <p className="zd-note">{QUALITY_NOTES[stats.quality]}</p>
+        </fieldset>
+
+        <fieldset className="zd-field">
+          <legend>frame rate</legend>
+          <Segmented options={FPS_OPTIONS} labels={FPS_LABELS} value={settings.fps} onChange={v => onSetting('fps', v)} />
+          <p className="zd-note">
+            ~{stats.fpsCap} fps on this {stats.refreshHz} Hz screen
+            {settings.fps === 'max' ? ' · uses the most battery and CPU' : ' · lower caps save battery and CPU'}
+          </p>
         </fieldset>
 
         <fieldset className="zd-field zd-toggles">
           <legend>sound</legend>
           <label><input type="checkbox" checked={!settings.muted} onChange={e => onSetting('muted', !e.target.checked)} /> sound effects</label>
           <label><input type="checkbox" checked={settings.music} onChange={e => onSetting('music', e.target.checked)} /> ambient music</label>
+          <label><input type="checkbox" checked={settings.pops} onChange={e => onSetting('pops', e.target.checked)} /> pops &amp; bangs{touch ? '' : ' (B)'}</label>
           {touch && <label><input type="checkbox" checked={tilt} onChange={e => onTilt(e.target.checked)} /> tilt to steer</label>}
         </fieldset>
 
@@ -252,6 +326,8 @@ function DrivePage() {
   const [tilt, setTilt] = useState(false);
   const [webgl] = useState(hasWebGL);
   const [engineFailed, setEngineFailed] = useState(false);
+  const [notice, setNotice] = useState('');
+  const noticeTimer = useRef(0);
   const [touch] = useState(isTouchDevice);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
@@ -262,8 +338,20 @@ function DrivePage() {
 
   // keep the seed in the URL so the road can be shared
   useEffect(() => {
-    if (urlSeed !== seed) setSearchParams({ seed: String(seed) }, { replace: true });
+    if (urlSeed === seed) return;
+    // keep any other parameters (e.g. ?debug) when the road changes
+    setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      next.set('seed', String(seed));
+      return next;
+    }, { replace: true });
   }, [seed, urlSeed, setSearchParams]);
+
+  const showNotice = useCallback((text) => {
+    setNotice(text);
+    window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(''), 1800);
+  }, []);
 
   const handleAction = useCallback((action) => {
     const engine = engineRef.current;
@@ -289,8 +377,15 @@ function DrivePage() {
     } else if (action === 'reset-flash') {
       setFlash(true);
       window.setTimeout(() => setFlash(false), 450);
+    } else if (action === 'over-rev') {
+      showNotice('way too fast for that gear — the engine would burst');
+    } else if (action === 'transmission-changed' || action === 'mute-changed' || action === 'pops-changed') {
+      const next = { ...settingsRef.current, transmission: engine.vehicle.transmission, muted: engine.audio.muted, pops: engine.crackle };
+      setSettings(next);
+      saveSettings(next);
+      if (action === 'pops-changed') showNotice(engine.crackle ? 'pops & bangs on — lift off at high revs' : 'pops & bangs off');
     }
-  }, []);
+  }, [showNotice]);
 
   useEffect(() => {
     if (!webgl || !canvasRef.current) return undefined;
@@ -302,10 +397,15 @@ function DrivePage() {
         seed,
         paint: paintHex(current.paint),
         quality: current.quality,
+        fps: current.fps,
         touch,
         reducedMotion: prefersReducedMotion(),
         muted: current.muted,
         music: current.music,
+        terrain: current.terrain,
+        transmission: current.transmission,
+        assists: current.assists,
+        pops: current.pops,
         onStats: setStats,
         onAction: handleAction,
       });
@@ -321,7 +421,8 @@ function DrivePage() {
       engine.dispose();
       engineRef.current = null;
     };
-  }, [seed, webgl, touch, handleAction]);
+    // a new terrain regenerates the world, like a new seed
+  }, [seed, settings.terrain, webgl, touch, handleAction]);
 
   // Enter / Space starts the drive from the intro
   useEffect(() => {
@@ -339,6 +440,7 @@ function DrivePage() {
   function begin() {
     setStarted(true);
     engineRef.current?.start();
+    canvasRef.current?.focus({ preventScroll: true });
   }
 
   const updateSetting = (key, value) => {
@@ -349,13 +451,19 @@ function DrivePage() {
     if (!engine) return;
     if (key === 'paint') engine.setPaint(paintHex(value));
     if (key === 'quality') engine.setQuality(value);
+    if (key === 'fps') engine.setFps(value);
     if (key === 'muted') engine.setMuted(value);
     if (key === 'music') engine.setMusic(value);
+    if (key === 'transmission') engine.setTransmission(value);
+    if (key === 'assists') engine.setAssists(value);
+    if (key === 'pops') engine.setPops(value);
+    if (key === 'terrain') setPaused(false);
   };
 
   const resume = () => {
     setPaused(false);
     engineRef.current?.resume();
+    canvasRef.current?.focus({ preventScroll: true });
   };
 
   const newRoad = () => {
@@ -400,12 +508,12 @@ function DrivePage() {
     <div className={`zd-page ${photo ? 'is-photo' : ''}`}>
       <Helmet>
         <title>Zen Drive — a relaxing endless drive · akashr.dev</title>
-        <meta name="description" content="A calm 3D driving game in the browser: endless procedurally generated roads, day and night, four biomes, cruise mode and ambient music. Built with three.js by Akash Rengaraj." />
+        <meta name="description" content="A 3D driving game in the browser: a GT-style sports car with real tyre physics and a 6-speed gearbox, endless procedural roads, six terrains, day and night. Built with three.js by Akash Rengaraj." />
       </Helmet>
 
       {/* a fresh canvas per road: the old engine force-loses its WebGL context on dispose */}
       <canvas
-        key={seed}
+        key={`${seed}-${settings.terrain}`}
         ref={canvasRef}
         className="zd-canvas"
         aria-label="Zen Drive: a 3D car on an endless winding road"
@@ -447,6 +555,7 @@ function DrivePage() {
           onPause={() => handleAction('pause')}
           onCamera={() => engineRef.current?.handleAction('camera')}
           onMute={() => updateSetting('muted', !settings.muted)}
+          notice={notice}
         />
       )}
 
@@ -459,6 +568,15 @@ function DrivePage() {
           <div className="zd-touch-right">
             <TouchPad label="Drift" icon="≋" className="zd-pad-drift" onChange={touchSet('handbrake')} />
             <TouchPad label="Brake" icon="■" className="zd-pad-brake" onChange={touchSet('brake')} />
+            {stats?.transmission === 'manual' && (
+              <div className="zd-shift-pads">
+                <button type="button" className="zd-pad zd-pad-shift" aria-label="Shift up" onClick={() => engineRef.current?.handleAction('shiftUp')}>+</button>
+                <button type="button" className="zd-pad zd-pad-shift" aria-label="Shift down" onClick={() => engineRef.current?.handleAction('shiftDown')}>−</button>
+              </div>
+            )}
+            <button type="button" className="zd-pad zd-pad-pops" aria-pressed={Boolean(stats?.pops)} aria-label="Pops and bangs" onClick={() => engineRef.current?.handleAction('pops')}>
+              <span aria-hidden="true">✹</span>
+            </button>
             <button type="button" className="zd-pad zd-pad-cruise" aria-pressed={stats?.cruise} onClick={() => engineRef.current?.handleAction('cruise')}>
               {stats?.cruise ? 'auto' : 'manual'}
             </button>

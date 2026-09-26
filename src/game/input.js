@@ -11,12 +11,24 @@ const KEY_ACTIONS = {
   KeyR: 'reset',
   Escape: 'pause',
   KeyH: 'help',
+  KeyE: 'shiftUp',
+  KeyQ: 'shiftDown',
+  KeyT: 'transmission',
+  KeyB: 'pops',
 };
+
+/** Keys typed into these belong to the field, not the car. */
+const TEXT_INPUT_TYPES = new Set(['text', 'search', 'email', 'url', 'tel', 'password', 'number']);
+function isTextField(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return true;
+  return target.tagName === 'INPUT' && TEXT_INPUT_TYPES.has(target.type);
+}
 
 const DRIVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
 /* Gamepad buttons (standard mapping) → actions, fired on press */
-const PAD_ACTIONS = { 3: 'camera', 2: 'cruise', 9: 'pause', 8: 'photo' };
+const PAD_ACTIONS = { 3: 'camera', 2: 'cruise', 1: 'pops', 9: 'pause', 8: 'photo', 5: 'shiftUp', 4: 'shiftDown' };
 
 export class DriveInput {
   constructor({ onAction, target = window }) {
@@ -29,11 +41,14 @@ export class DriveInput {
     this.padPressed = new Set();
     this.state = { throttle: 0, brake: 0, steer: 0, handbrake: false, manual: false };
 
+    // true only while the player is driving; menus and the intro keep normal keyboard behaviour
+    this.driving = false;
+
     this.handleKeyDown = (e) => {
-      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button')) {
-        if (e.code !== 'Escape') return;
-      }
+      if (isTextField(e.target) && e.code !== 'Escape') return;
       if (DRIVE_KEYS.has(e.code)) {
+        if (!this.driving) return; // let Space / Enter operate focused menu buttons
+        // never let Space or Enter "click" a focused HUD button while driving
         e.preventDefault();
         this.keys.add(e.code);
       }
@@ -78,6 +93,12 @@ export class DriveInput {
   disableTilt() {
     this.tilt = null;
     window.removeEventListener('deviceorientation', this.handleOrientation);
+  }
+
+  /** Driving on/off (off in menus, the intro and photo mode). Releasing clears held keys. */
+  setDriving(on) {
+    this.driving = on;
+    if (!on) this.keys.clear();
   }
 
   setTouch(partial) {

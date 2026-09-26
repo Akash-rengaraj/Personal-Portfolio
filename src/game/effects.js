@@ -1,6 +1,6 @@
 /**
- * Ambient particles around the camera: drifting snow in the snowy biome and
- * fireflies after dark. Positions wrap inside a box that follows the camera,
+ * Ambient particles around the camera: snow, spring petals or autumn leaves
+ * (from the biome) and fireflies after dark. Positions wrap inside a box that follows the camera,
  * so a few hundred points look endless.
  */
 import * as THREE from 'three';
@@ -52,30 +52,46 @@ export class Effects {
     scene.add(this.snow, this.fireflies);
   }
 
-  /** `snowAmount` and `fireflyAmount` are 0–1 blends from biome and time of day. */
-  update(dt, center, ground, snowAmount, fireflyAmount) {
+  /**
+   * `weather` is the blended biome particle setting ({ color, size, fall, sway, amount })
+   * or null — snow, spring petals or autumn leaves. `fireflyAmount` is 0–1. `share` (0–1,
+   * from the graphics tier) is how many of the particles are simulated and drawn at all.
+   */
+  update(dt, center, ground, weather, fireflyAmount, share = 1) {
     this.time += dt;
-    this.snowMaterial.opacity = snowAmount * 0.85;
+    const amount = weather?.amount ?? 0;
+    const flakes = Math.round(this.snow.geometry.attributes.position.count * share);
+    const flies = Math.round(this.fireflies.geometry.attributes.position.count * share);
+    this.snow.geometry.setDrawRange(0, flakes);
+    this.fireflies.geometry.setDrawRange(0, flies);
+    if (weather) {
+      this.snowMaterial.color.setHex(weather.color);
+      this.snowMaterial.size = weather.size;
+    }
+    this.snowMaterial.opacity = amount * 0.85;
     this.fireflyMaterial.opacity = fireflyAmount * (0.75 + 0.25 * Math.sin(this.time * 3));
-    this.snow.visible = snowAmount > 0.01;
+    this.snow.visible = amount > 0.01;
     this.fireflies.visible = fireflyAmount > 0.01;
     const motion = this.reducedMotion ? 0.3 : 1;
 
     if (this.snow.visible) {
       const p = this.snow.geometry.attributes.position;
       const a = p.array;
-      for (let i = 0; i < a.length; i += 3) {
-        a[i] = wrap(a[i] + Math.sin(this.time * 0.6 + i) * 0.3 * dt * motion, center.x);
-        a[i + 1] = wrap(a[i + 1] - 2.2 * dt * motion, center.y + 10);
-        a[i + 2] = wrap(a[i + 2], center.z);
+      const fall = weather.fall * dt * motion;
+      const sway = weather.sway * dt * motion;
+      for (let i = 0; i < flakes * 3; i += 3) {
+        a[i] = wrap(a[i] + Math.sin(this.time * 0.6 + i) * sway, center.x);
+        a[i + 1] = wrap(a[i + 1] - fall, center.y + 10);
+        a[i + 2] = wrap(a[i + 2] + Math.cos(this.time * 0.5 + i * 0.7) * sway * 0.6, center.z);
       }
+      p.addUpdateRange(0, flakes * 3);
       p.needsUpdate = true;
     }
 
     if (this.fireflies.visible) {
       const p = this.fireflies.geometry.attributes.position;
       const a = p.array;
-      for (let i = 0, k = 0; i < a.length; i += 3, k++) {
+      for (let i = 0, k = 0; i < flies * 3; i += 3, k++) {
         const ph = this.phases[k];
         a[i] = wrap(a[i] + Math.sin(this.time * 0.7 + ph) * 0.9 * dt * motion, ground.x);
         a[i + 1] = ground.y + 0.4 + (Math.sin(this.time * 0.5 + ph * 3) + 1) * 1.8;

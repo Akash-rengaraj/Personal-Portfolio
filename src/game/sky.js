@@ -39,7 +39,33 @@ const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 sunColor;
   uniform vec3 sunDir;
   uniform float sunVisible;
+  uniform float night;
+  uniform float cloudCover;
+  uniform vec2 cloudOffset;
   varying vec3 vDir;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+  float valueNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int k = 0; k < 5; k++) {
+      v += a * valueNoise(p);
+      p = p * 2.03 + vec2(17.1, 9.4);
+      a *= 0.5;
+    }
+    return v;
+  }
+
   void main() {
     vec3 dir = normalize(vDir);
     float h = dir.y;
@@ -49,6 +75,23 @@ const SKY_FRAGMENT = /* glsl */ `
     float disc = smoothstep(0.9992, 0.9996, d);
     float glow = pow(d, 64.0) * 0.55 + pow(d, 6.0) * 0.12;
     col += sunColor * (disc * 2.5 + glow) * sunVisible;
+
+    // a layer of drifting cumulus: fbm projected on a flat ceiling, self-shadowed away
+    // from the sun with a bright rim toward it, thinning out into the haze at the horizon
+    if (h > 0.0 && cloudCover > 0.0) {
+      vec2 uv = dir.xz / (h + 0.1) * 0.9 + cloudOffset;
+      float n = fbm(uv);
+      float edge = 1.0 - cloudCover;
+      float c = smoothstep(edge, edge + 0.22, n) * smoothstep(0.02, 0.22, h);
+      if (c > 0.001) {
+        float lit = fbm(uv + sunDir.xz * 0.14);
+        float shade = clamp(0.62 + (n - lit) * 2.6, 0.35, 1.08);
+        vec3 day = mix(horizonColor, vec3(1.0), 0.62) * shade + sunColor * (0.18 + 0.7 * pow(d, 5.0)) * sunVisible;
+        vec3 dark = mix(horizonColor, topColor, 0.5) * 0.55;
+        vec3 cloud = mix(day, dark, night);
+        col = mix(col, cloud, c * mix(0.94, 0.7, night));
+      }
+    }
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -107,6 +150,9 @@ export class Sky {
         sunColor: { value: new THREE.Color() },
         sunDir: { value: new THREE.Vector3(0, 1, 0) },
         sunVisible: { value: 1 },
+        night: { value: 0 },
+        cloudCover: { value: 0.45 },
+        cloudOffset: { value: new THREE.Vector2(hashInts(seed, 53) % 100, 0) },
       },
       vertexShader: SKY_VERTEX,
       fragmentShader: SKY_FRAGMENT,
@@ -162,9 +208,10 @@ export class Sky {
 
   /**
    * Updates colours and lights for `phase`, centred on the car.
-   * `biomeMountain` is the linear [r,g,b] tint of the current biome's hills.
+   * `biomeMountain` is the linear [r,g,b] tint of the current biome's hills;
+   * `clouds` is the biome's cloud cover (0–1), and the clouds drift by `dt`.
    */
-  update(phase, center, biomeMountain, viewDistance) {
+  update(phase, center, biomeMountain, viewDistance, clouds = 0.45, dt = 0) {
     const elevation = sunElevation(phase);
     const s = lerpStops(elevation, this.state);
     const azimuth = phase * Math.PI * 2 + 0.6;
@@ -178,6 +225,11 @@ export class Sky {
     u.sunColor.value.copy(s.sun);
     u.sunDir.value.copy(this.sunDir);
     u.sunVisible.value = 1 - this.night;
+    u.night.value = this.night;
+    // clouds off (low graphics) is exactly 0, so the shader skips them altogether
+    u.cloudCover.value = clouds > 0 ? u.cloudCover.value + (clouds - u.cloudCover.value) * Math.min(1, dt * 0.5) : 0;
+    u.cloudOffset.value.x += dt * 0.006;
+    u.cloudOffset.value.y += dt * 0.0025;
     this.starMaterial.opacity = smoothstep(0.35, 1, this.night) * 0.9;
 
     // after dark the "sun" light becomes a cool moon on the opposite side
@@ -197,7 +249,10 @@ export class Sky {
     this.fog.far = viewDistance * 0.95;
 
     this.mountainTint.setRGB(biomeMountain[0], biomeMountain[1], biomeMountain[2]);
-    this.mountainMaterial.color.copy(s.horizon).lerp(this.mountainTint, 0.5).multiplyScalar(1 - this.night * 0.55);
+    // by day the ring carries the biome's colour; at night it fades to a dark silhouette
+    // against the sky (a full-strength tint made desert mountains glow orange under the stars)
+    this.mountainMaterial.color.copy(s.horizon).lerp(this.mountainTint, 0.5 * (1 - this.night * 0.7))
+      .multiplyScalar(1 - this.night * 0.72);
 
     this.dome.position.copy(center);
     this.stars.position.copy(center);

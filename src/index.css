@@ -8544,7 +8544,7 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   --zd-accent: #3dffb8;
   --zd-ink: #f1f6f3;
   --zd-dim: rgba(241, 246, 243, 0.62);
-  --zd-glass: rgba(8, 12, 14, 0.55);
+  --zd-glass: rgba(8, 12, 14, 0.66); /* no backdrop blur over the live canvas: it re-blurs every frame */
   --zd-line: rgba(255, 255, 255, 0.14);
   position: fixed;
   inset: 0;
@@ -8587,8 +8587,6 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   border: 1px solid var(--zd-line);
   border-radius: 10px;
   background: var(--zd-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   font-size: 0.78rem;
   white-space: nowrap;
 }
@@ -8601,8 +8599,6 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   border: 1px solid var(--zd-line);
   border-radius: 10px;
   background: var(--zd-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   color: var(--zd-ink);
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
@@ -8614,6 +8610,10 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   position: absolute;
   top: calc(max(14px, env(safe-area-inset-top)) + 52px);
   left: 16px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  /* a light backing chip: readable over bright sky and snow as well as at night */
+  background: rgba(8, 12, 14, 0.42);
   font-size: 0.78rem;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
   animation: zdFadeIn 0.6s ease both;
@@ -8631,8 +8631,6 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   border: 1px solid var(--zd-line);
   border-radius: 16px;
   background: var(--zd-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 .zd-speed { display: flex; align-items: baseline; gap: 6px; }
 .zd-speed-value {
@@ -8674,8 +8672,6 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   border: 1px solid var(--zd-line);
   border-radius: 999px;
   background: var(--zd-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   font-size: 0.74rem;
   white-space: nowrap;
 }
@@ -8860,8 +8856,6 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   border: 1px solid var(--zd-line);
   border-radius: 14px;
   background: var(--zd-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   font-size: 0.76rem;
   white-space: nowrap;
 }
@@ -8887,9 +8881,7 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 18px;
-  background: rgba(8, 12, 14, 0.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(8, 12, 14, 0.52);
   color: var(--zd-ink);
   font: inherit;
   font-size: 1.3rem;
@@ -8910,6 +8902,18 @@ body.light-mode .heatmap-svg.is-skeleton { color: rgba(10, 10, 10, 0.07); }
   font-size: 0.72rem;
 }
 .zd-pad-cruise[aria-pressed='true'] { color: var(--zd-accent); border-color: rgba(61, 255, 184, 0.5); }
+/* pops & bangs toggle: a small round pad stacked above the cruise pill */
+.zd-pad-pops {
+  position: absolute;
+  right: 14px;
+  bottom: 126px;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  color: var(--zd-dim, #9aa5ad);
+}
+.zd-pad-pops[aria-pressed='true'] { color: #ff9a4d; border-color: rgba(255, 154, 77, 0.6); box-shadow: 0 0 14px rgba(255, 120, 40, 0.35); }
 .zd-touch-right { position: relative; }
 
 .zd-dash.is-touch { bottom: max(14px, env(safe-area-inset-bottom)); padding: 8px 16px; gap: 12px; }
@@ -8964,4 +8968,75 @@ body.light-mode .cta-drive:hover { color: #7a3212; border-color: #a4481d; }
 @media (max-width: 640px) {
   /* drive + resume share the last row of the phone CTA grid */
   .hero-main .hero-ctas .cta-drive ~ .cta-ghost { grid-column: auto; padding: 0.6rem 0.5rem; }
+}
+
+/* Zen Drive — tachometer, shift light, drift badge, gearbox controls */
+.zd-dash { overflow: hidden; }
+.zd-tach {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.zd-tach-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #3dffb8 0%, #3dffb8 62%, #ffd23f 80%, #ff5c5c 93%);
+  transition: transform 0.08s linear;
+}
+.zd-tach-red {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 93%;
+  right: 0;
+  background: rgba(255, 92, 92, 0.35);
+}
+.zd-dash-rpm { min-width: 7.2em; font-variant-numeric: tabular-nums; }
+.zd-gear { font-size: 1rem; transition: background 0.1s, color 0.1s; }
+.zd-gear.is-shift { background: #ff5c5c; color: #fff; animation: zdShift 0.18s steps(2) infinite; }
+@keyframes zdShift { 50% { background: #ffd23f; color: #1a1a1a; } }
+.zd-drift {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 110px);
+  transform: translateX(-50%) skewX(-12deg);
+  padding: 4px 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ff8f7a, #ffd29a);
+  color: #1a0f08;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  animation: zdFadeIn 0.25s ease both;
+}
+.zd-segmented.is-wrap { flex-wrap: wrap; }
+.zd-segmented.is-wrap button { flex: 1 0 28%; }
+.zd-shift-pads { display: flex; flex-direction: column; gap: 8px; }
+.zd-pad-shift { width: 52px; height: 44px; font-size: 1.3rem; font-weight: 700; color: var(--zd-accent); }
+
+@media (max-width: 640px) {
+  .zd-dash-rpm { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zd-gear.is-shift { animation: none; }
+}
+
+.zd-notice {
+  position: absolute;
+  left: 50%;
+  top: calc(max(14px, env(safe-area-inset-top)) + 58px);
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 92, 92, 0.6);
+  border-radius: 999px;
+  background: rgba(40, 8, 8, 0.72);
+  color: #ffb3b3;
+  font-size: 0.76rem;
+  white-space: nowrap;
+  animation: zdFadeIn 0.2s ease both;
 }

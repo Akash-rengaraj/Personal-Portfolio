@@ -18,7 +18,35 @@ export class CameraRig {
     this.target = new THREE.Vector3();
     this.desired = new THREE.Vector3();
     this.look = new THREE.Vector3();
+    this.offset = new THREE.Vector3();
+    this.lookOffset = new THREE.Vector3();
+    this.carPos = new THREE.Vector3();
+    this.arm = 1; // fraction of the camera's reach currently used (shortens in front of trees)
     this.initialized = false;
+  }
+
+  /**
+   * How much of the horizontal camera offset is clear of trees and rocks (0…1), so the
+   * view never ends up behind a trunk and its canopy. Obstacles store trunk radii; the
+   * canopy is taken as roughly twice that plus a margin.
+   */
+  clearReach(carPos, offset, minReach) {
+    const len = Math.hypot(offset.x, offset.z);
+    if (len <= minReach) return 1;
+    const dx = offset.x / len;
+    const dz = offset.z / len;
+    let clear = len;
+    this.world.forEachObstacleNear(carPos.x, carPos.z, (o) => {
+      if (o.seg) return; // guardrails are low; they never hide the car
+      const ox = o.x - carPos.x;
+      const oz = o.z - carPos.z;
+      const along = ox * dx + oz * dz;
+      if (along < 1.5 || along > clear + 3) return;
+      const side = Math.abs(ox * dz - oz * dx);
+      const reach = o.r * 2.2 + 0.6;
+      if (side < reach) clear = Math.min(clear, along - Math.sqrt(reach * reach - side * side) - 0.4);
+    });
+    return Math.max(minReach, clear) / len;
   }
 
   cycle() {
@@ -43,8 +71,9 @@ export class CameraRig {
       this.target.copy(this.look);
     } else {
       if (mode === 'chase') {
-        const back = 6.3 + speed * 0.045;
-        this.desired.set(car.x - fx * back, car.y + 2.25 + speed * 0.012, car.z - fz * back);
+        const s = Math.min(speed, 70);
+        const back = 6.4 + s * 0.04;
+        this.desired.set(car.x - fx * back, car.y + 2.1 + s * 0.01, car.z - fz * back);
         this.look.set(car.x + fx * 3.5, car.y + 1.1, car.z + fz * 3.5);
       } else if (mode === 'cinematic') {
         this.orbit += dt * (idleOrbit ? 0.16 : 0.11);
@@ -57,18 +86,31 @@ export class CameraRig {
         this.look.set(car.x + fx * 10, car.y, car.z + fz * 10);
         ease = 2.2;
       }
-      const floor = this.world.visualHeight(this.desired.x, this.desired.z) + 0.9;
-      if (this.desired.y < floor) this.desired.y = floor;
-
+      // ease the camera's offset from the car (not its absolute position),
+      // so it stays glued on at any speed yet still swings smoothly round corners
+      this.carPos.set(car.x, car.y, car.z);
+      this.desired.sub(this.carPos);
+      this.look.sub(this.carPos);
       if (!this.initialized) {
-        this.position.copy(this.desired);
-        this.target.copy(this.look);
+        this.offset.copy(this.desired);
+        this.lookOffset.copy(this.look);
         this.initialized = true;
       } else {
         const k = 1 - Math.exp(-ease * dt);
-        this.position.lerp(this.desired, k);
-        this.target.lerp(this.look, Math.min(1, k * 2));
+        this.offset.lerp(this.desired, k);
+        this.lookOffset.lerp(this.look, Math.min(1, k * 2));
       }
+      // spring arm: snap in quickly in front of an obstacle, ease back out once it's passed
+      if (mode !== 'drone') {
+        const want = this.clearReach(this.carPos, this.offset, mode === 'chase' ? 3.6 : 3.2);
+        this.arm += (want - this.arm) * (1 - Math.exp(-(want < this.arm ? 14 : 1.8) * dt));
+      } else {
+        this.arm = 1;
+      }
+      this.position.set(this.carPos.x + this.offset.x * this.arm, this.carPos.y + this.offset.y, this.carPos.z + this.offset.z * this.arm);
+      this.target.copy(this.carPos).add(this.lookOffset);
+      const floor = this.world.visualHeight(this.position.x, this.position.z) + 0.9;
+      if (this.position.y < floor) this.position.y = floor;
     }
 
     this.camera.position.copy(this.position);
@@ -79,7 +121,7 @@ export class CameraRig {
     }
     this.camera.lookAt(this.target);
 
-    const fov = this.reducedMotion || mode !== 'chase' ? (mode === 'hood' ? 68 : 58) : Math.min(76, 58 + speed * 0.4);
+    const fov = this.reducedMotion || mode !== 'chase' ? (mode === 'hood' ? 68 : 58) : 58 + 24 * (1 - Math.exp(-speed / 60));
     if (Math.abs(this.camera.fov - fov) > 0.05) {
       this.camera.fov += (fov - this.camera.fov) * (1 - Math.exp(-3 * dt));
       this.camera.updateProjectionMatrix();

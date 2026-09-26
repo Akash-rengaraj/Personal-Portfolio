@@ -387,7 +387,7 @@ ${intro()}
   add({
     route: '/drive',
     title: `Zen Drive — a relaxing endless drive · akashr.dev`,
-    description: `A calm 3D driving game in the browser by ${profile.name}: endless procedurally generated roads, day and night, four biomes, cruise mode and ambient music. Built with three.js.`,
+    description: `A 3D driving game in the browser by ${profile.name}: a GT-style sports car with real tyre physics, a 6-speed gearbox and 600 km/h top speed, endless procedural roads, six terrains and day/night. Built with three.js.`,
     og: await ogImageFor('drive'),
     priority: '0.5',
     changefreq: 'monthly',
@@ -396,8 +396,8 @@ ${intro()}
         '@type': 'VideoGame',
         name: 'Zen Drive',
         url: canonicalFor('/drive'),
-        description: 'A relaxing, endless 3D driving game with procedurally generated roads, biomes and a day/night cycle.',
-        genre: ['Driving', 'Casual', 'Relaxation'],
+        description: 'An endless 3D driving game: GT-style sports car with real tyre physics and drifting, 6-speed automatic or manual gearbox, procedurally generated roads, six terrains and a day/night cycle.',
+        genre: ['Driving', 'Racing', 'Simulation', 'Casual'],
         gamePlatform: 'Web browser',
         applicationCategory: 'Game',
         operatingSystem: 'Any (WebGL)',
@@ -409,17 +409,18 @@ ${intro()}
     ],
     body: `
 <h1>Zen Drive</h1>
-<p>A relaxing 3D driving game that runs in the browser. There is no timer, no score and no crashes — just an endless, randomly generated road winding through green meadows, autumn forests, desert dunes and snowy pines while the sun sets and the stars come out.</p>
+<p>A 3D driving game that runs in the browser. There is no timer, no score and no crashes — just a GT-style sports car and an endless, randomly generated road through green hills, spring blossom, summer fields, autumn forest, desert dunes and snowy pines, while the sun sets and the stars come out.</p>
 <h2>How it works</h2>
 <ul>
+  <li>Real-time vehicle dynamics: tyre grip from slip angle (a simplified Pacejka magic formula), a friction circle shared between braking/traction and cornering, load transfer and aerodynamic downforce — so power oversteer and handbrake drifts behave like the real thing.</li>
+  <li>A 6-speed gearbox, automatic or manual, with a 9,000 rpm redline, rev limiter, clutch slip at launch and engine braking. Top speed is about 600 km/h.</li>
+  <li>Optional traction control, ABS and stability control; switch them off to drift.</li>
   <li>The road is generated on the fly from a seed, so every road can be shared with a link like <code>/drive?seed=4242</code>.</li>
-  <li>Terrain, trees and street lamps stream in around the car in chunks and are built under a per-frame time budget, so driving never stutters.</li>
-  <li>Arcade physics tuned to feel good: grip-limited steering, gentle handbrake drifts, suspension that follows the ground.</li>
-  <li>Cruise mode keeps the car in its lane (on the left, as in India) so you can just watch the scenery.</li>
-  <li>All sound — engine, wind, tyres and the ambient music — is synthesised live with the Web Audio API.</li>
+  <li>Terrain, trees, kerbs, reflector posts, guardrails and street lamps stream in around the car in chunks, built under a per-frame time budget.</li>
+  <li>All sound — the flat-six engine, tyres, wind and ambient music — is synthesised live with the Web Audio API.</li>
 </ul>
 <h2>Controls</h2>
-<p>W / S or the arrow keys to drive, A / D to steer, Space to drift, Z for cruise, C to change camera, P for photo mode, Esc to pause. On phones: on-screen pads or tilt steering. Gamepads work too.</p>
+<p>W / S or the arrow keys to drive, A / D to steer, Space for the handbrake, E / Q to shift up and down, T to switch automatic/manual, Z for cruise, C to change camera, P for photo mode, Esc to pause. On phones: on-screen pads or tilt steering. Gamepads work too.</p>
 <p>Built with three.js by <a href="/about">${escapeHtml(profile.name)}</a>.</p>`,
   });
 
@@ -544,7 +545,7 @@ ${posts.map(p => `- [${p.title}](${SITE}/blog/${p.slug}) (${p.date}): ${p.summar
 - [About](${SITE}/about): background, education, leadership, stack and certifications
 - [Achievements](${SITE}/achievements): hackathons, certifications, milestones
 - [Contact](${SITE}/contact): email and social links
-- [Zen Drive](${SITE}/drive): a relaxing endless 3D driving game built with three.js (procedural roads, biomes, day/night)
+- [Zen Drive](${SITE}/drive): an endless 3D driving game built with three.js — GT-style car with real tyre physics, 6-speed gearbox, six terrains, day/night
 - [Résumé (PDF)](${SITE}${profile.resume})
 
 ## Optional
