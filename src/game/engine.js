@@ -17,6 +17,8 @@ import { DriveInput } from './input';
 import { DriveAudio } from './audio';
 import { ROAD } from './road';
 import { detectQuality } from './device';
+import { RemoteCars } from './net/remoteCars';
+import { packState, packHit, unpackHit, FLAG, SEND_HZ } from './net/protocol';
 import { clamp, wrapAngle } from './noise';
 
 const STEP = 1 / 120;
@@ -107,6 +109,12 @@ export class DriveEngine {
     this.refresh = 1000 / 60; // measured screen refresh interval (ms)
     this.lastVsync = 0;
     this.lastStatsKey = '';
+    this.room = null;     // multiplayer RoomSession while in a room
+    this.remotes = null;  // friends' cars
+    this.roomSubs = [];
+    this.lastSend = 0;
+    this.pendingRegroup = 0;
+    this.tmpFriend = {};
 
     this.mode = 'intro'; // intro → drive ⇄ paused / photo
     this.cruise = options.touch || options.reducedMotion;
@@ -450,6 +458,7 @@ export class DriveEngine {
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     this.lastDt = this.lastDt === undefined ? dt : this.lastDt * 0.9 + dt * 0.1;
+    if (this.room) this.netTick(now);
     if (this.mode === 'paused') return;
 
     const simulate = this.mode === 'drive' || this.mode === 'intro';
@@ -471,6 +480,8 @@ export class DriveEngine {
         }
       }
 
+      // friends' cars push back only when the room has collisions on
+      this.vehicle.otherCars = this.room?.meta.collisions && this.mode === 'drive' ? this.remotes.bodies(this.room.id) : null;
       this.acc += dt;
       let steps = 0;
       while (this.acc >= STEP && steps < MAX_STEPS) {
@@ -480,7 +491,8 @@ export class DriveEngine {
         steps++;
       }
       if (steps === MAX_STEPS) this.acc = 0;
-      this.phase = (this.phase + dt / DAY_LENGTH) % 1;
+      // in a room the time of day is the room's clock, so slow frames can't make anyone drift
+      this.phase = this.room ? this.room.phaseNow(DAY_LENGTH) : (this.phase + dt / DAY_LENGTH) % 1;
     }
 
     this.renderFrame(dt, now, simulate);
@@ -512,7 +524,10 @@ export class DriveEngine {
     this.world.process(this.mode === 'intro' ? 8 : this.quality.streamMs);
     // knocked-down scenery tumbles; breaking and landing things make themselves heard
     this.world.update(simulate ? dt : 0, v);
-    for (const e of this.world.events) this.audio.crash(e.material, e.strength, e.kind);
+    for (const e of this.world.events) {
+      this.audio.crash(e.material, e.strength, e.kind);
+      if (e.kind === 'break' && !e.remote) this.room?.sendBroken(e.id);
+    }
     this.world.events.length = 0;
 
     const biome = this.world.biomeAt(x, z);
@@ -522,6 +537,7 @@ export class DriveEngine {
     const { night } = this.sky.update(this.phase, this.carPos, mountain, this.world.viewDistance, clouds, dt);
     this.night = night;
     this.world.setNight(night);
+    this.remotes?.update(dt, this.room.serverNow(), night);
 
     const weight = (id) => (biome.a.id === id ? 1 - biome.t : 0) + (biome.b.id === id ? biome.t : 0);
     // turbo, blow-off and backfires (only while the car is actually being simulated)
@@ -664,6 +680,7 @@ export class DriveEngine {
       fpsCap: Math.round(1000 / this.frameInterval),
       refreshHz: Math.round(1000 / this.refresh),
       seed: this.seed,
+      room: this.roomStats(q),
       debug: this.debug ? {
         fps: Math.round(1 / Math.max(0.001, this.lastDt ?? 0.016)),
         calls: info.calls,
@@ -680,6 +697,159 @@ export class DriveEngine {
     this.onStats(stats);
   }
 
+  /* ─── multiplayer ─────────────────────────────────────── */
+
+  /**
+   * Joins the drive to a room session: friends' cars appear and follow the network, this car
+   * is published, broken scenery is shared and the time of day follows the room's clock.
+   * A player who joined (rather than created) the room is taken to their friends once the
+   * first update arrives.
+   */
+  attachRoom(session) {
+    this.detachRoom(true);
+    this.room = session;
+    this.remotes = new RemoteCars(this.scene, this.renderer, this.car.envMap, (x, z) => this.world.groundHeight(x, z));
+    this.remotes.setPlayers(session.players, session.id);
+    this.roomSubs = [
+      session.on('players', (players) => {
+        this.remotes?.setPlayers(players, session.id);
+        this.emitStats(true);
+      }),
+      session.on('state', (id, text) => this.remotes?.receive(id, text)),
+      session.on('hit', (text) => {
+        const hit = unpackHit(text);
+        // our half of a bump another game refereed (stale ones — e.g. from before we joined — are dropped)
+        if (hit && this.mode === 'drive' && session.serverNow() - hit.t < 1500) this.vehicle.applyPush(hit);
+      }),
+      session.on('broken', (id) => this.applyRemoteBreak(id)),
+      session.on('meta', () => this.emitStats(true)),
+      session.on('connection', () => this.emitStats(true)),
+    ];
+    this.phase = session.phaseNow(DAY_LENGTH);
+    this.pendingRegroup = session.isHost ? 0 : performance.now() + 12000;
+    this.emitStats(true);
+  }
+
+  /** Back to driving alone (the session itself is left or closed by the caller). */
+  detachRoom(silent = false) {
+    this.roomSubs.forEach(off => off());
+    this.roomSubs = [];
+    this.remotes?.dispose();
+    this.remotes = null;
+    this.room = null;
+    this.vehicle.otherCars = null;
+    this.pendingRegroup = 0;
+    if (!silent) this.emitStats(true);
+  }
+
+  /** Publishes this car ~10 times a second (once a second while paused) and keeps the clock shared. */
+  netTick(now) {
+    const room = this.room;
+    if (room.closed) return;
+    const paused = this.mode === 'paused' || this.mode === 'photo';
+    if (now - this.lastSend >= (paused ? 1000 : 1000 / SEND_HZ)) {
+      this.lastSend = now;
+      const v = this.vehicle;
+      const flags = (v.braking > 0.1 ? FLAG.BRAKE : 0) | (v.gear < 0 ? FLAG.REVERSE : 0)
+        | (paused ? FLAG.PAUSED : 0) | (v.airborne ? FLAG.AIRBORNE : 0);
+      room.sendState(packState(room.serverNow(), v, flags));
+    }
+    // shoves our car gave friends' cars (we referee those pairs): sent a few times a second
+    const pushes = this.vehicle.pushes;
+    if (pushes.size && now - (this.lastHitSend ?? 0) > 50) {
+      this.lastHitSend = now;
+      for (const [seat, push] of pushes) room.sendHit(seat, packHit(room.serverNow(), push));
+      pushes.clear();
+    }
+    if (this.pendingRegroup && (now > this.pendingRegroup || this.regroup())) this.pendingRegroup = 0;
+  }
+
+  /**
+   * Another player knocked something down: it falls here too (thrown the way their car was
+   * going), or — if it isn't streamed in on this machine — it simply loads already down.
+   */
+  applyRemoteBreak(id) {
+    const w = this.world;
+    if (w.broken.has(id)) return;
+    const o = w.byId.get(id);
+    if (!o || o.broken) {
+      w.broken.add(id);
+      return;
+    }
+    const friend = (this.remotes?.list() ?? [])
+      .filter(f => Math.hypot(f.x - o.x, f.z - o.z) < 30)
+      .sort((a, b) => Math.hypot(a.x - o.x, a.z - o.z) - Math.hypot(b.x - o.x, b.z - o.z))[0];
+    let vx = friend?.vx ?? 0;
+    let vz = friend?.vz ?? 0;
+    let speed = Math.hypot(vx, vz);
+    if (speed < 0.5) {
+      const a = Math.random() * Math.PI * 2;
+      speed = o.breakSpeed * 1.2;
+      vx = Math.sin(a) * speed;
+      vz = Math.cos(a) * speed;
+    }
+    w.breakObstacle(o, {
+      x: o.x, y: w.groundHeight(o.x, o.z) + 0.45, z: o.z, vx, vz, nx: -vx / speed, nz: -vz / speed,
+      impact: Math.max(speed, o.breakSpeed), carInverseMass: 1 / 1450,
+    }, true);
+  }
+
+  /**
+   * Puts this car just behind the nearest friend, in the other lane, rolling at their speed.
+   * Friends can be far down the endless road, so it's generated up to them first. Returns
+   * false when there's nobody to go to.
+   */
+  regroup() {
+    const friends = (this.remotes?.list() ?? []).filter(f => !f.away);
+    if (!friends.length) return false;
+    const v = this.vehicle;
+    const dist = (f) => Math.hypot(f.x - v.x, f.z - v.z);
+    const f = friends.reduce((a, b) => (dist(a) <= dist(b) ? a : b));
+    const road = this.world.road;
+    let q = road.nearest(f.x, f.z, 60, this.tmpFriend);
+    for (let k = 0; !q && k < 300; k++) {
+      road.ensureAhead(road.length - 1);
+      q = road.nearest(f.x, f.z, 60, this.tmpFriend);
+    }
+    let spot;
+    if (q) {
+      // the lane they're not in, 10 m back
+      const side = (f.x - q.x) * Math.cos(q.heading) - (f.z - q.z) * Math.sin(q.heading) > 0 ? -1 : 1;
+      const p = road.pointAt(Math.max(0, q.s - 10), this.tmpAhead);
+      const off = ROAD.LANE_OFFSET * side;
+      spot = { x: p.x + Math.cos(p.heading) * off, z: p.z - Math.sin(p.heading) * off, heading: p.heading };
+    } else {
+      spot = { x: f.x - Math.sin(f.heading) * 10 + Math.cos(f.heading) * 3.5, z: f.z - Math.cos(f.heading) * 10 - Math.sin(f.heading) * 3.5, heading: f.heading };
+    }
+    v.reset(spot);
+    v.launch(Math.hypot(f.vx, f.vz));
+    this.world.warmup(v.x, v.z);
+    this.lastPlan = { x: v.x, z: v.z, t: performance.now() };
+    this.savePrev();
+    this.rig.initialized = false;
+    this.onAction?.('reset-flash');
+    this.emitStats(true);
+    return true;
+  }
+
+  /** Room summary for the HUD and menus (distances along the road, rounded to 10 m). */
+  roomStats(myRoad) {
+    const room = this.room;
+    if (!room) return null;
+    const players = [...room.players].map(([seat, p]) => {
+      const you = seat === room.id;
+      let dist = null;
+      const car = this.remotes?.cars.get(seat);
+      if (!you && car?.pose) {
+        const q = this.world.road.nearest(car.pose.x, car.pose.z, 120, this.tmpFriend);
+        dist = q && myRoad ? q.s - myRoad.s : Math.hypot(car.pose.x - this.vehicle.x, car.pose.z - this.vehicle.z);
+        dist = Math.round(dist / 10) * 10;
+      }
+      return { seat, name: p.name, paint: p.paint, you, host: p.pid === room.meta.host, dist, away: Boolean(car?.away) };
+    }).sort((a, b) => Number(a.seat) - Number(b.seat));
+    return { code: room.code, isHost: room.isHost, collisions: Boolean(room.meta.collisions), online: room.online, players };
+  }
+
   /** Renders a frame and returns it as a PNG blob (photo mode). */
   capture() {
     this.renderer.render(this.scene, this.camera);
@@ -688,6 +858,7 @@ export class DriveEngine {
 
   dispose() {
     cancelAnimationFrame(this.raf);
+    this.detachRoom(true);
     if (window.__zenDrive === this) delete window.__zenDrive;
     document.removeEventListener('visibilitychange', this.handleVisibility);
     this.resizeObserver.disconnect();

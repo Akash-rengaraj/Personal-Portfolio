@@ -258,9 +258,10 @@ export class World {
    * debris body (lamp heads and pools of light go with it), wires to a felled pole drop,
    * and the id is remembered so rebuilt chunks leave it out. `hit` describes the impact:
    * { x, y, z, vx, vz, nx, nz, impact, carInverseMass }, with n pointing from the object to
-   * the car. Returns the impulse (N·s) the car takes along n.
+   * the car. `remote` marks a break reported by another player (not sent back to the room).
+   * Returns the impulse (N·s) the car takes along n.
    */
-  breakObstacle(o, hit) {
+  breakObstacle(o, hit, remote = false) {
     const fallback = hit.impact / (hit.carInverseMass + 1 / Math.min(o.mass * (o.rooted ? 1.3 : 1), 600));
     if (o.broken || !o.pieces) return 0;
     o.broken = true;
@@ -284,7 +285,9 @@ export class World {
       pole.spanOut = null;
     }
     const impulse = parts.length ? this.debris.spawn(parts, o, hit) : fallback;
-    this.events.push({ kind: 'break', material: o.material, strength: Math.min(1, hit.impact / 25 + Math.min(o.mass, 900) / 1500) });
+    this.events.push({
+      kind: 'break', id: o.id, remote, material: o.material, strength: Math.min(1, hit.impact / 25 + Math.min(o.mass, 900) / 1500),
+    });
     return impulse;
   }
 

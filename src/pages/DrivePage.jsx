@@ -5,10 +5,12 @@ import { DriveEngine, FPS_OPTIONS, hasWebGL } from '../game/engine';
 import { PAINTS } from '../game/carModel';
 import { TERRAIN_OPTIONS } from '../game/biomes';
 import { parseSeed, randomSeed } from '../game/rng';
+import { MAX_PLAYERS, cleanName, normalizeCode } from '../game/net/protocol';
 
 const SETTINGS_KEY = 'zen-drive-settings';
 const DEFAULT_SETTINGS = {
   paint: PAINTS[0].id, quality: 'auto', fps: 'auto', muted: false, music: true, transmission: 'auto', assists: 'full', terrain: 'mixed', pops: false,
+  playerName: '',
 };
 const ASSIST_LABELS = { full: 'full', sport: 'sport', off: 'drift (off)' };
 const QUALITY_NOTES = {
@@ -35,6 +37,17 @@ function saveSettings(settings) {
 }
 
 const paintHex = (id) => (PAINTS.find(p => p.id === id) ?? PAINTS[0]).hex;
+const paintCss = (id) => `#${paintHex(id).toString(16).padStart(6, '0')}`;
+const inviteLink = (code) => `${window.location.origin}/drive?room=${code}`;
+
+/** "alongside", "240 m ahead", "1.3 km behind" — a friend's distance along the road. */
+function friendDistance(d) {
+  if (d === null || d === undefined) return '';
+  if (Math.abs(d) < 25) return 'alongside';
+  const a = Math.abs(d);
+  const text = a >= 1000 ? `${(a / 1000).toFixed(1)} km` : `${a} m`;
+  return `${text} ${d > 0 ? 'ahead' : 'behind'}`;
+}
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -117,6 +130,24 @@ function Hud({ stats, onPause, onCamera, onMute, touch, notice }) {
         <span className="zd-dim">· {stats.time}</span>
       </div>
 
+      {stats.room && (
+        <div className="zd-room" aria-label="Multiplayer room">
+          <div className="zd-room-head">
+            room <strong>{stats.room.code}</strong>
+            <span className="zd-dim"> · {stats.room.players.length}/{MAX_PLAYERS}</span>
+            {!stats.room.online && <span className="zd-room-warn"> · reconnecting…</span>}
+          </div>
+          {stats.room.players.length < 2 && <div className="zd-dim">waiting for friends — share the code</div>}
+          {stats.room.players.filter(p => !p.you).map(p => (
+            <div key={p.seat} className={`zd-room-friend ${p.away ? 'is-away' : ''}`}>
+              <span className="zd-dot" style={{ '--dot': paintCss(p.paint) }} />
+              {p.name}
+              <span className="zd-dim"> {p.away ? 'away' : friendDistance(p.dist)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className={`zd-dash ${touch ? 'is-touch' : ''}`}>
         <div className="zd-tach" aria-hidden="true">
           <span className="zd-tach-fill" style={{ transform: `scaleX(${Math.min(1, stats.rpmNorm)})` }} />
@@ -158,11 +189,93 @@ function Hud({ stats, onPause, onCamera, onMute, touch, notice }) {
   );
 }
 
-function Intro({ seed, touch, onStart }) {
+/**
+ * Multiplayer: pick a name, then create a room (with or without car-to-car contact) or join
+ * one with a code. Used on the start screen and from the pause menu.
+ */
+function MultiplayerPanel({ name, onName, initialCode, busy, error, onCreate, onJoin, onBack }) {
+  const [code, setCode] = useState(initialCode ?? '');
+  const [collisions, setCollisions] = useState(true);
+  const nameOk = cleanName(name).length > 0;
+  const nameRef = useRef(null);
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
+  const join = (e) => {
+    e.preventDefault();
+    if (nameOk && code.length === 6 && !busy) onJoin(code);
+  };
+  return (
+    <div className="zd-mp">
+      <label className="zd-mp-name">
+        <span className="zd-dim">your name — shown above your car</span>
+        <input
+          ref={nameRef}
+          type="text"
+          value={name}
+          maxLength={16}
+          autoComplete="nickname"
+          spellCheck={false}
+          placeholder="e.g. Akash"
+          onChange={e => onName(e.target.value)}
+        />
+      </label>
+      <div className="zd-mp-options">
+        <section className="zd-mp-box">
+          <h3>create a room</h3>
+          <p className="zd-note">you get a code to share · up to {MAX_PLAYERS} drivers on this road</p>
+          <label className="zd-mp-check">
+            <input type="checkbox" checked={collisions} onChange={e => setCollisions(e.target.checked)} />
+            cars bump into each other
+          </label>
+          <p className="zd-note">{collisions ? 'push and nudge each other' : 'ghost cars: you drive through each other'}</p>
+          <button type="button" className="zd-menu-btn is-primary" disabled={busy || !nameOk} onClick={() => onCreate({ collisions })}>
+            ✦ create room
+          </button>
+        </section>
+        <form className="zd-mp-box" onSubmit={join}>
+          <h3>join a room</h3>
+          <p className="zd-note">type the 6-character code your friend sent</p>
+          <input
+            className="zd-mp-code"
+            type="text"
+            inputMode="text"
+            autoCapitalize="characters"
+            spellCheck={false}
+            aria-label="Room code"
+            placeholder="K7RW3P"
+            value={code}
+            maxLength={6}
+            onChange={e => setCode(normalizeCode(e.target.value))}
+          />
+          <button type="submit" className="zd-menu-btn is-primary" disabled={busy || !nameOk || code.length !== 6}>⇄ join</button>
+        </form>
+      </div>
+      {!nameOk && <p className="zd-note">type a name first</p>}
+      {busy && <p className="zd-note" role="status">connecting…</p>}
+      {error && <p className="zd-mp-error" role="alert">{error}</p>}
+      {onBack && <button type="button" className="zd-back zd-linkish" onClick={onBack}>← back</button>}
+    </div>
+  );
+}
+
+function Intro({ seed, touch, onStart, multiplayer }) {
   const buttonRef = useRef(null);
   useEffect(() => {
-    buttonRef.current?.focus();
-  }, []);
+    if (!multiplayer.open) buttonRef.current?.focus();
+  }, [multiplayer.open]);
+  if (multiplayer.open) {
+    return (
+      <div className="zd-intro" role="dialog" aria-modal="true" aria-labelledby="zd-title">
+        <div className="zd-intro-card">
+          <p className="zd-line"><span className="zd-prompt">$</span> ./zen-drive --multiplayer</p>
+          <h1 id="zd-title" className="zd-title is-quick">drive together</h1>
+          <p className="zd-lede">Up to {MAX_PLAYERS} friends on the same endless road — same landscape, same sunset. No sign-up.</p>
+          <MultiplayerPanel {...multiplayer.panel} onBack={multiplayer.close} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="zd-intro" role="dialog" aria-modal="true" aria-labelledby="zd-title">
       <div className="zd-intro-card">
@@ -183,9 +296,14 @@ function Intro({ seed, touch, onStart }) {
             {KEY_HELP.slice(0, 6).map(([key, what]) => <li key={key}><kbd>{key}</kbd> {what}</li>)}
           </ul>
         )}
-        <button ref={buttonRef} type="button" className="zd-start" onClick={onStart}>
-          [ {touch ? 'tap' : 'press enter'} to drive ]
-        </button>
+        <div className="zd-modes">
+          <button ref={buttonRef} type="button" className="zd-start" onClick={onStart}>
+            [ ▶ drive solo{touch ? '' : ' — enter'} ]
+          </button>
+          <button type="button" className="zd-mode-alt" onClick={multiplayer.openPanel}>
+            ⇄ multiplayer <span className="zd-dim">· up to {MAX_PLAYERS} friends</span>
+          </button>
+        </div>
         <Link to="/" className="zd-back">← back to portfolio</Link>
       </div>
     </div>
@@ -211,11 +329,64 @@ function Segmented({ options, value, onChange, labels = {}, wrap = false }) {
   );
 }
 
-function PauseMenu({ stats, settings, touch, tilt, onResume, onNewRoad, onReset, onSetting, onTilt, onCopy, copied }) {
+function RoomSection({ room, multiplayer, onInvite, invited }) {
+  if (!room) {
+    return (
+      <fieldset className="zd-field">
+        <legend>multiplayer</legend>
+        <p className="zd-note">bring up to {MAX_PLAYERS - 1} friends onto this road</p>
+        <button type="button" className="zd-menu-btn" onClick={multiplayer.openPanel}>⇄ create or join a room</button>
+      </fieldset>
+    );
+  }
+  const friends = room.players.filter(p => !p.you);
+  return (
+    <fieldset className="zd-field">
+      <legend>multiplayer</legend>
+      <p className="zd-room-code">room <strong>{room.code}</strong></p>
+      <ul className="zd-room-list">
+        {room.players.map(p => (
+          <li key={p.seat}>
+            <span className="zd-dot" style={{ '--dot': paintCss(p.paint) }} />
+            {p.name}
+            <span className="zd-dim">{p.you ? ' (you)' : ''}{p.host ? ' · host' : ''}{p.you ? '' : ` · ${p.away ? 'away' : friendDistance(p.dist)}`}</span>
+          </li>
+        ))}
+      </ul>
+      {room.isHost ? (
+        <label className="zd-mp-check">
+          <input type="checkbox" checked={room.collisions} onChange={e => multiplayer.setCollisions(e.target.checked)} />
+          cars bump into each other
+        </label>
+      ) : (
+        <p className="zd-note">{room.collisions ? 'cars bump into each other' : 'ghost cars — you pass through each other'} · the host decides</p>
+      )}
+      <div className="zd-menu-actions">
+        <button type="button" className="zd-menu-btn" onClick={onInvite}>{invited ? '✓ invite link copied' : '⧉ copy invite link'}</button>
+        <button type="button" className="zd-menu-btn" disabled={!friends.length} onClick={multiplayer.regroup}>⇆ drive with friends</button>
+        <button type="button" className="zd-menu-btn" onClick={multiplayer.leave}>✕ leave room</button>
+      </div>
+      <p className="zd-note">only your game is paused — friends keep driving</p>
+    </fieldset>
+  );
+}
+
+function PauseMenu({ stats, settings, touch, tilt, onResume, onNewRoad, onReset, onSetting, onTilt, onCopy, copied, multiplayer, onInvite, invited }) {
   const firstRef = useRef(null);
   useEffect(() => {
-    firstRef.current?.focus();
-  }, []);
+    if (!multiplayer.open) firstRef.current?.focus();
+  }, [multiplayer.open]);
+  if (multiplayer.open) {
+    return (
+      <div className="zd-menu-backdrop">
+        <div className="zd-menu" role="dialog" aria-modal="true" aria-labelledby="zd-menu-title">
+          <h2 id="zd-menu-title" className="zd-menu-title"><span className="zd-prompt">$</span> multiplayer</h2>
+          <p className="zd-note">a new room uses this road; joining takes you to your friend’s</p>
+          <MultiplayerPanel {...multiplayer.panel} onBack={multiplayer.close} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="zd-menu-backdrop">
       <div className="zd-menu" role="dialog" aria-modal="true" aria-labelledby="zd-menu-title">
@@ -223,9 +394,11 @@ function PauseMenu({ stats, settings, touch, tilt, onResume, onNewRoad, onReset,
         <div className="zd-menu-actions">
           <button ref={firstRef} type="button" className="zd-menu-btn is-primary" onClick={onResume}>▶ resume</button>
           <button type="button" className="zd-menu-btn" onClick={onReset}>⟲ back to the road</button>
-          <button type="button" className="zd-menu-btn" onClick={onNewRoad}>✦ new random road</button>
-          <button type="button" className="zd-menu-btn" onClick={onCopy}>{copied ? '✓ link copied' : '⧉ share this road'}</button>
+          {!stats.room && <button type="button" className="zd-menu-btn" onClick={onNewRoad}>✦ new random road</button>}
+          {!stats.room && <button type="button" className="zd-menu-btn" onClick={onCopy}>{copied ? '✓ link copied' : '⧉ share this road'}</button>}
         </div>
+
+        <RoomSection room={stats.room} multiplayer={multiplayer} onInvite={onInvite} invited={invited} />
 
         <fieldset className="zd-field">
           <legend>paint</legend>
@@ -260,11 +433,13 @@ function PauseMenu({ stats, settings, touch, tilt, onResume, onNewRoad, onReset,
           </p>
         </fieldset>
 
-        <fieldset className="zd-field">
-          <legend>terrain</legend>
-          <Segmented options={TERRAIN_OPTIONS.map(t => t.id)} value={settings.terrain} onChange={v => onSetting('terrain', v)} wrap />
-          <p className="zd-note">{settings.terrain === 'mixed' ? 'changes every 1.5 km as you drive' : 'this landscape everywhere'}</p>
-        </fieldset>
+        {!stats.room && (
+          <fieldset className="zd-field">
+            <legend>terrain</legend>
+            <Segmented options={TERRAIN_OPTIONS.map(t => t.id)} value={settings.terrain} onChange={v => onSetting('terrain', v)} wrap />
+            <p className="zd-note">{settings.terrain === 'mixed' ? 'changes every 1.5 km as you drive' : 'this landscape everywhere'}</p>
+          </fieldset>
+        )}
 
         <fieldset className="zd-field">
           <legend>graphics</legend>
@@ -335,6 +510,15 @@ function DrivePage() {
   stateRef.current = { started, paused, photo };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  // multiplayer: the room session, the create/join panel, and the room's landscape
+  const urlRoom = normalizeCode(searchParams.get('room') ?? '');
+  const [room, setRoom] = useState(null);
+  const roomRef = useRef(null);
+  roomRef.current = room;
+  const [mp, setMp] = useState(() => ({ open: urlRoom.length === 6, busy: false, error: '' }));
+  const [roomTerrain, setRoomTerrain] = useState(null);
+  const [invited, setInvited] = useState(false);
+  const activeTerrain = roomTerrain ?? settings.terrain;
 
   // keep the seed in the URL so the road can be shared
   useEffect(() => {
@@ -402,7 +586,7 @@ function DrivePage() {
         reducedMotion: prefersReducedMotion(),
         muted: current.muted,
         music: current.music,
-        terrain: current.terrain,
+        terrain: activeTerrain,
         transmission: current.transmission,
         assists: current.assists,
         pops: current.pops,
@@ -417,16 +601,48 @@ function DrivePage() {
     setEngineFailed(false);
     engineRef.current = engine;
     if (stateRef.current.started) engine.start();
+    // joining a room on another road rebuilds the engine: the new one takes the room over
+    if (roomRef.current && !roomRef.current.closed) engine.attachRoom(roomRef.current);
     return () => {
       engine.dispose();
       engineRef.current = null;
     };
     // a new terrain regenerates the world, like a new seed
-  }, [seed, settings.terrain, webgl, touch, handleAction]);
+  }, [seed, activeTerrain, webgl, touch, handleAction]);
 
-  // Enter / Space starts the drive from the intro
+  // leaving the page leaves the room (closing the tab is handled by the database's disconnect clean-up)
+  useEffect(() => () => {
+    roomRef.current?.leave();
+  }, []);
+
+  // friends coming and going, and the host closing the room
   useEffect(() => {
-    if (started) return undefined;
+    if (!room) return undefined;
+    let known = new Map(room.players);
+    const since = performance.now();
+    const offPlayers = room.on('players', (players) => {
+      const settled = performance.now() - since > 2000; // the room's existing drivers load in first
+      for (const [seat, p] of players) if (settled && !known.has(seat) && seat !== room.id) showNotice(`${p.name} joined`);
+      for (const [seat, p] of known) if (!players.has(seat) && seat !== room.id) showNotice(`${p.name} left`);
+      known = new Map(players);
+    });
+    const offClosed = room.on('closed', (reason) => {
+      if (reason !== 'host-left') return;
+      engineRef.current?.detachRoom();
+      roomRef.current = null;
+      setRoom(null);
+      setRoomParam(null);
+      showNotice('the host closed the room — you’re driving solo');
+    });
+    return () => {
+      offPlayers();
+      offClosed();
+    };
+  }, [room, showNotice]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Enter / Space starts the drive from the intro (not while the multiplayer panel is open)
+  useEffect(() => {
+    if (started || mp.open) return undefined;
     const onKey = (e) => {
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
@@ -449,7 +665,11 @@ function DrivePage() {
     saveSettings(next);
     const engine = engineRef.current;
     if (!engine) return;
-    if (key === 'paint') engine.setPaint(paintHex(value));
+    if (key === 'paint') {
+      engine.setPaint(paintHex(value));
+      roomRef.current?.updateMe({ paint: value });
+    }
+    if (key === 'terrain') setRoomTerrain(null);
     if (key === 'quality') engine.setQuality(value);
     if (key === 'fps') engine.setFps(value);
     if (key === 'muted') engine.setMuted(value);
@@ -486,6 +706,114 @@ function DrivePage() {
     }
   };
 
+  /* ─── multiplayer ─── */
+
+  function setRoomParam(code) {
+    setSearchParams((params) => {
+      const next = new URLSearchParams(params);
+      if (code) next.set('room', code);
+      else next.delete('room');
+      return next;
+    }, { replace: true });
+  }
+
+  /** Into the drive (from the intro) or back to it (from the pause menu). */
+  function driveOn() {
+    if (!stateRef.current.started) begin();
+    else if (stateRef.current.paused) resume();
+  }
+
+  function enterRoom(session, message) {
+    roomRef.current = session;
+    setRoom(session);
+    setMp({ open: false, busy: false, error: '' });
+    setRoomParam(session.code);
+    driveOn();
+    showNotice(message);
+  }
+
+  const createRoom = async ({ collisions }) => {
+    const engine = engineRef.current;
+    if (!engine || mp.busy) return;
+    setMp(m => ({ ...m, busy: true, error: '' }));
+    try {
+      const { RoomSession } = await import('../game/net/room');
+      const session = await RoomSession.create({
+        seed, terrain: activeTerrain, phase: engine.phase, collisions, name: settings.playerName, paint: settings.paint,
+      });
+      setRoomTerrain(activeTerrain);
+      engine.attachRoom(session);
+      enterRoom(session, `room ${session.code} is open — send your friends the code`);
+    } catch (err) {
+      setMp(m => ({ ...m, busy: false, error: err.message }));
+    }
+  };
+
+  const joinRoom = async (code) => {
+    if (mp.busy) return;
+    setMp(m => ({ ...m, busy: true, error: '' }));
+    try {
+      const { RoomSession } = await import('../game/net/room');
+      await roomRef.current?.leave();
+      const session = await RoomSession.join({ code, name: settings.playerName, paint: settings.paint });
+      const { seed: roomSeed, terrain } = session.meta;
+      const host = [...session.players.values()].find(p => p.pid === session.meta.host);
+      // the room's road: same seed and landscape; a different one rebuilds the engine, which then attaches
+      roomRef.current = session;
+      if (roomSeed === seed && terrain === activeTerrain) engineRef.current?.attachRoom(session);
+      setRoomTerrain(terrain);
+      setSeed(roomSeed);
+      enterRoom(session, host ? `joined ${host.name}’s room` : `joined room ${session.code}`);
+    } catch (err) {
+      setMp(m => ({ ...m, busy: false, error: err.message }));
+    }
+  };
+
+  const leaveRoom = () => {
+    const session = roomRef.current;
+    engineRef.current?.detachRoom();
+    session?.leave();
+    roomRef.current = null;
+    setRoom(null);
+    setRoomParam(null);
+    showNotice('you left the room — driving solo');
+  };
+
+  const inviteFriends = async () => {
+    const link = inviteLink(roomRef.current?.code ?? '');
+    try {
+      await navigator.clipboard.writeText(link);
+      setInvited(true);
+      window.setTimeout(() => setInvited(false), 1800);
+    } catch {
+      window.prompt('Send this link to your friends', link);
+    }
+  };
+
+  const multiplayer = {
+    open: mp.open,
+    openPanel: () => setMp({ open: true, busy: false, error: '' }),
+    close: () => {
+      setMp({ open: false, busy: false, error: '' });
+      if (!roomRef.current) setRoomParam(null);
+    },
+    panel: {
+      name: settings.playerName,
+      onName: (v) => updateSetting('playerName', v.slice(0, 16)),
+      initialCode: urlRoom,
+      busy: mp.busy,
+      error: mp.error,
+      onCreate: createRoom,
+      onJoin: joinRoom,
+    },
+    setCollisions: (on) => roomRef.current?.setCollisions(on),
+    regroup: () => {
+      if (engineRef.current?.regroup()) resume();
+      else showNotice('no friend on the road yet');
+    },
+    leave: leaveRoom,
+  };
+
   const toggleTilt = async (on) => {
     const ok = await engineRef.current?.setTilt(on);
     setTilt(Boolean(on && ok));
@@ -513,7 +841,7 @@ function DrivePage() {
 
       {/* a fresh canvas per road: the old engine force-loses its WebGL context on dispose */}
       <canvas
-        key={`${seed}-${settings.terrain}`}
+        key={`${seed}-${activeTerrain}`}
         ref={canvasRef}
         className="zd-canvas"
         aria-label="Zen Drive: a 3D car on an endless winding road"
@@ -546,7 +874,7 @@ function DrivePage() {
         </div>
       )}
 
-      {webgl && !engineFailed && !started && <Intro seed={seed} touch={touch} onStart={begin} />}
+      {webgl && !engineFailed && !started && <Intro seed={seed} touch={touch} onStart={begin} multiplayer={multiplayer} />}
 
       {webgl && started && stats && !photo && (
         <Hud
@@ -606,6 +934,9 @@ function DrivePage() {
           onSetting={updateSetting}
           onTilt={toggleTilt}
           onCopy={copyLink}
+          multiplayer={multiplayer}
+          onInvite={inviteFriends}
+          invited={invited}
         />
       )}
 

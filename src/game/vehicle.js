@@ -162,6 +162,7 @@ export class Vehicle {
     this.airborne = false;
     this.bump = 0;
     this.braking = 0;
+    this.pushes = new Map(); // multiplayer: shoves our car gave others, waiting to be sent
     this.throttle = 0;
     this.shifted = 0;
     this.lastGround = undefined;
@@ -289,11 +290,13 @@ export class Vehicle {
       brake = input.throttle;
     }
     this.throttle = throttle;
+    this.braking = brake; // brake lights (in reverse the auto box swaps the pedals, so not input.brake)
 
     const sub = dt / 2;
     for (let k = 0; k < 2; k++) this.integrate(sub, throttle, brake, input);
 
     this.collide();
+    if (this.otherCars?.length) this.collideCars(this.otherCars);
     this.suspend(dt);
     this.speed = Math.hypot(this.vx, this.vz);
     this.distance += this.speed * dt;
@@ -592,6 +595,83 @@ export class Vehicle {
    * Breakable things (posts, signs, lamps, poles, trees…) hit faster than their break speed
    * give way instead and go flying as debris (see World#breakObstacle).
    */
+  /**
+   * Contact with friends' cars in multiplayer. Each entry is { seat, x, z, heading, vx, vz,
+   * authority } — two circles like ours. Every game moves only its own car, so each pair of
+   * cars has one referee: the game with `authority` over the pair (the lower seat) detects the
+   * contact against its view of the other car, takes its half of a slightly springy
+   * equal-mass impulse and half the overlap, and records the other half in `pushes` (seat →
+   * { dvx, dvz, dx, dz }) to be sent to that car. The other game doesn't resolve the pair
+   * itself; it takes what it's sent (applyPush). A shunt from behind pushes the car in front,
+   * a side-swipe nudges both apart, and nobody gets thrown.
+   */
+  collideCars(cars) {
+    const T = TUNING;
+    const m = T.mass;
+    const I = T.yawInertia * 3;
+    const R = T.bodyRadius;
+    for (const other of cars) {
+      if (!other.authority) continue;
+      const ofx = Math.sin(other.heading);
+      const ofz = Math.cos(other.heading);
+      for (const along of T.bodyCircles) {
+        const px = Math.sin(this.heading) * along;
+        const pz = Math.cos(this.heading) * along;
+        for (const otherAlong of T.bodyCircles) {
+          const dx = this.x + px - (other.x + ofx * otherAlong);
+          const dz = this.z + pz - (other.z + ofz * otherAlong);
+          const d = Math.hypot(dx, dz);
+          if (d >= 2 * R || d < 1e-4) continue;
+          const nx = dx / d;
+          const nz = dz / d;
+          const half = (2 * R - d) * 0.5;
+          this.x += nx * half;
+          this.z += nz * half;
+          const push = this.pushes.get(other.seat) ?? { dvx: 0, dvz: 0, dx: 0, dz: 0 };
+          push.dx -= nx * half;
+          push.dz -= nz * half;
+          other.x -= nx * half; // our view of them moves too, so the overlap isn't counted twice
+          other.z -= nz * half;
+          const rx = px - nx * R;
+          const rz = pz - nz * R;
+          const vn = (this.vx + this.yawRate * rz - other.vx) * nx + (this.vz - this.yawRate * rx - other.vz) * nz;
+          if (vn < 0) {
+            const kn = nx * rz - nz * rx;
+            const jn = (-1.25 * vn) / (2 / m + (kn * kn) / I);
+            this.vx += (jn * nx) / m;
+            this.vz += (jn * nz) / m;
+            this.yawRate += (0.6 * jn * kn) / I;
+            this.bump = Math.min(1, this.bump - vn / 12);
+            push.dvx -= (jn * nx) / m;
+            push.dvz -= (jn * nz) / m;
+            other.vx -= (jn * nx) / m;
+            other.vz -= (jn * nz) / m;
+          }
+          this.pushes.set(other.seat, push);
+        }
+      }
+    }
+  }
+
+  /** A shove sent by another player's game (their half of a car-to-car contact). */
+  applyPush({ dvx, dvz, dx, dz }) {
+    this.vx += dvx;
+    this.vz += dvz;
+    this.x += dx;
+    this.z += dz;
+    this.bump = Math.min(1, this.bump + Math.hypot(dvx, dvz) / 12);
+  }
+
+  /** Rolls the car along its heading at `speed` m/s in a fitting gear (placing it into a moving pack). */
+  launch(speed) {
+    this.vx = Math.sin(this.heading) * speed;
+    this.vz = Math.cos(this.heading) * speed;
+    this.forwardSpeed = speed;
+    const kmh = speed * 3.6;
+    const index = TUNING.gearTopSpeeds.findIndex(top => top > kmh * 1.3);
+    this.gear = this.pendingGear = index < 0 ? TUNING.gearTopSpeeds.length : index + 1;
+  }
+
   collide() {
     const T = TUNING;
     const m = T.mass;

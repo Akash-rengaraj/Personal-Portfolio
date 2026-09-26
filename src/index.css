@@ -9040,3 +9040,90 @@ body.light-mode .cta-drive:hover { color: #7a3212; border-color: #a4481d; }
   white-space: nowrap;
   animation: zdFadeIn 0.2s ease both;
 }
+
+/* ── zen drive: start modes & multiplayer ── */
+.zd-modes { display: grid; gap: 10px; }
+.zd-mode-alt {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1px solid var(--zd-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--zd-ink);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.zd-mode-alt:hover,
+.zd-mode-alt:focus-visible { border-color: var(--zd-accent); background: rgba(61, 255, 184, 0.08); outline: none; }
+
+.zd-mp { display: grid; gap: 14px; text-align: left; user-select: text; -webkit-user-select: text; }
+.zd-mp-name { display: grid; gap: 6px; font-size: 0.74rem; }
+.zd-mp input[type='text'] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--zd-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--zd-ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.zd-mp input[type='text']:focus { border-color: var(--zd-accent); outline: none; }
+.zd-mp-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.zd-mp-box {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--zd-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.zd-mp-box h3 { margin: 0; font-size: 0.86rem; color: var(--zd-accent); }
+.zd-mp-box .zd-note { margin: 0; }
+.zd-mp-box .zd-menu-btn { text-align: center; }
+.zd-mp-box .zd-menu-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.zd-mp input.zd-mp-code { font-size: 1.15rem; letter-spacing: 0.3em; text-align: center; text-transform: uppercase; }
+.zd-mp-check { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; cursor: pointer; }
+.zd-mp-check input { accent-color: #3dffb8; width: 16px; height: 16px; }
+.zd-linkish { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; justify-self: start; }
+@media (max-width: 560px) {
+  .zd-mp-options { grid-template-columns: 1fr; }
+}
+
+/* friends on the road (HUD) */
+.zd-room {
+  position: absolute;
+  top: calc(max(14px, env(safe-area-inset-top)) + 84px);
+  left: 16px;
+  display: grid;
+  gap: 3px;
+  max-width: min(280px, 60vw);
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--zd-glass);
+  font-size: 0.74rem;
+  animation: zdFadeIn 0.4s ease both;
+}
+.zd-room-head strong { color: var(--zd-accent); letter-spacing: 0.08em; }
+.zd-room-warn { color: #ffcf5c; }
+.zd-room-friend { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zd-room-friend.is-away { opacity: 0.55; }
+.zd-dot {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot, var(--zd-accent));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+.zd-room-code { margin: 0 0 8px; font-size: 0.86rem; }
+.zd-room-code strong { color: var(--zd-accent); font-size: 1.15rem; letter-spacing: 0.22em; }
+.zd-room-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 5px; font-size: 0.8rem; }
+.zd-room-list li { display: flex; align-items: center; gap: 7px; }
+.zd-field .zd-menu-actions { margin: 12px 0 0; }
+.zd-title.is-quick { animation-delay: 0s; }
+.zd-mp-error { margin: 0; font-size: 0.8rem; color: #ff8a80; animation: zdFadeIn 0.25s ease both; }

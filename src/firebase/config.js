@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: "AIzaSyArH-lmQW0Qny4t3jUT_sH1oA1Ac8Y_KkI", // This key is public and safe to expose
     authDomain: "akash-portfolio-eb550.firebaseapp.com",
     databaseURL: "https://akash-portfolio-eb550-default-rtdb.asia-southeast1.firebasedatabase.app",

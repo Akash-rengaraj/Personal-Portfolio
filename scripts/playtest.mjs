@@ -7,6 +7,11 @@
  *   npm run test:drive                    # in another (BASE_URL overrides http://localhost:4173)
  *   ONLY=break npm run test:drive         # just the checks whose name contains "break"
  *
+ * The multiplayer check needs the local Firebase database emulator (it never touches the live
+ * database); without it the check is skipped:
+ *   npx firebase-tools@13 emulators:start --only database --project demo-zen-drive
+ * (EMULATOR_PORT overrides 9000; firebase-tools 14+ needs Java 21, 13 runs on Java 11+.)
+ *
  * Uses the `window.__zenDrive` hook that only exists with `?debug` in the URL.
  * Screenshots go to SHOTS_DIR (default: ./playtest-shots, git-ignored).
  */
@@ -17,6 +22,10 @@ const BASE = process.env.BASE_URL ?? 'http://localhost:4173';
 const CHROME = process.env.CHROME_PATH ?? '/usr/bin/google-chrome';
 const SHOTS = process.env.SHOTS_DIR ?? 'playtest-shots';
 const ONLY = process.env.ONLY; // run just the checks whose name contains this
+const EMULATOR_PORT = Number(process.env.EMULATOR_PORT ?? 9000);
+
+/** Thrown by a check that can't run here (reported as skipped, not failed). */
+class Skip extends Error {}
 const results = [];
 
 async function check(name, fn) {
@@ -25,7 +34,8 @@ async function check(name, fn) {
     const detail = await fn();
     results.push({ name, ok: true, detail });
   } catch (err) {
-    results.push({ name, ok: false, detail: err.message.split('\n')[0] });
+    if (err instanceof Skip) results.push({ name, ok: true, skipped: true, detail: err.message });
+    else results.push({ name, ok: false, detail: err.message.split('\n')[0] });
   }
 }
 
@@ -674,6 +684,116 @@ async function main() {
       + '· no blank terrain · muted audio sleeps';
   });
 
+  await check('multiplayer: 4 drivers share a road, a 5th is turned away; bumping, ghost mode, shared breaks, regroup, clean-up', async () => {
+    const db = `http://127.0.0.1:${EMULATOR_PORT}`;
+    const ns = 'ns=akash-portfolio-eb550-default-rtdb';
+    try {
+      await fetch(`${db}/.json?${ns}`);
+    } catch {
+      throw new Skip(`no Firebase emulator on port ${EMULATOR_PORT}`);
+    }
+    const query = `debug&emulator=${EMULATOR_PORT}`;
+    const players = [];
+    const join = async (url, name) => {
+      const ctx = await browser.newContext({ viewport: { width: 900, height: 560 } });
+      const p = await openGame(ctx, '', { quality: 'low', muted: true, playerName: name });
+      await p.goto(`${BASE}${url}`, { waitUntil: 'networkidle', timeout: 90000 });
+      await p.waitForFunction(() => window.__zenDrive);
+      players.push({ p, ctx, name });
+      return p;
+    };
+    try {
+      const host = await join(`/drive?seed=777&${query}`, 'Host');
+      await host.getByRole('button', { name: /multiplayer/ }).click();
+      await host.getByRole('button', { name: /create room/ }).click();
+      await host.waitForFunction(() => window.__zenDrive.room, null, { timeout: 20000 });
+      const code = await host.evaluate(() => window.__zenDrive.room.code);
+      await host.evaluate(() => { const e = window.__zenDrive; e.setCruise(true); e.cruiseSpeed = 70 / 3.6; });
+      // three friends join by invite link (their own random roads get replaced by the room's)
+      for (const name of ['Two', 'Three', 'Four']) {
+        const p = await join(`/drive?room=${code}&${query}`, name);
+        await p.getByRole('button', { name: /^⇄ join$/ }).click();
+        await p.waitForFunction(() => window.__zenDrive?.room, null, { timeout: 20000 });
+      }
+      // a fifth is refused
+      const fifth = await join(`/drive?room=${code}&${query}`, 'Five');
+      await fifth.getByRole('button', { name: /^⇄ join$/ }).click();
+      await fifth.waitForSelector('.zd-mp-error', { timeout: 20000 });
+      const refused = await fifth.locator('.zd-mp-error').innerText();
+      // everyone sees the other three, on the same road and clock, and the guests were brought to the host
+      await host.waitForTimeout(4000);
+      const views = await Promise.all(players.slice(0, 4).map(({ p }) => p.evaluate(() => {
+        const e = window.__zenDrive;
+        const others = e.remotes?.list() ?? [];
+        const nearest = Math.min(...others.map(f => Math.hypot(f.x - e.vehicle.x, f.z - e.vehicle.z)));
+        return { seed: e.seed, phase: e.phase, seen: others.length, names: others.map(f => f.name).sort().join(','), nearest };
+      })));
+      // bumping: the second car rams the host from behind at +30 km/h; the host (seat 0) is shoved forward
+      const hostBefore = await host.evaluate(() => { const e = window.__zenDrive; e.setCruise(false); return e.vehicle.speed * 3.6; });
+      const guest = players[1].p;
+      await guest.evaluate(() => {
+        const e = window.__zenDrive;
+        e.setCruise(false);
+        const h = e.remotes.list().find(f => f.name === 'Host');
+        e.vehicle.reset({ x: h.x - Math.sin(h.heading) * 9, z: h.z - Math.cos(h.heading) * 9, heading: h.heading });
+        e.vehicle.launch(Math.hypot(h.vx, h.vz) + 30 / 3.6);
+        e.savePrev();
+      });
+      let hostPeak = hostBefore;
+      for (let k = 0; k < 20; k++) {
+        await host.waitForTimeout(100);
+        hostPeak = Math.max(hostPeak, await host.evaluate(() => window.__zenDrive.vehicle.speed * 3.6));
+      }
+      // ghost mode: the host turns contact off; everyone gets the setting
+      await host.evaluate(() => window.__zenDrive.room.setCollisions(false));
+      await guest.waitForFunction(() => window.__zenDrive.room.meta.collisions === false, null, { timeout: 8000 });
+      // shared break: the host knocks a lamp down, a guest's world has it down too
+      const lamp = await host.evaluate(() => {
+        const e = window.__zenDrive;
+        const w = e.world;
+        const v = e.vehicle;
+        let best = null;
+        for (const bucket of w.obstacles.values()) for (const o of bucket) {
+          if (o.kind === 'lamp' && !o.broken && (!best || Math.hypot(o.x - v.x, o.z - v.z) < Math.hypot(best.x - v.x, best.z - v.z))) best = o;
+        }
+        w.breakObstacle(best, { x: best.x, y: v.y + 0.45, z: best.z, vx: 20, vz: 0, nx: -1, nz: 0, impact: 20, carInverseMass: 1 / 1450 });
+        return best.id;
+      });
+      await guest.waitForFunction((id) => window.__zenDrive.world.broken.has(id), lamp, { timeout: 8000 });
+      // regroup from the far start of the road
+      const regroup = await players[2].p.evaluate(() => {
+        const e = window.__zenDrive;
+        e.vehicle.reset(e.laneSpawn(e.world.road.pointAt(0, {})));
+        e.savePrev();
+        const far = Math.min(...e.remotes.list().map(f => Math.hypot(f.x - e.vehicle.x, f.z - e.vehicle.z)));
+        const ok = e.regroup();
+        const near = Math.min(...e.remotes.list().map(f => Math.hypot(f.x - e.vehicle.x, f.z - e.vehicle.z)));
+        return { far, ok, near };
+      });
+      // a guest leaves: the others see three; the host leaves: the room is gone from the database
+      await players[3].p.evaluate(() => window.__zenDrive.room.leave());
+      await host.waitForTimeout(1500);
+      const afterLeave = await host.evaluate(() => window.__zenDrive.room.players.size);
+      await host.evaluate(() => window.__zenDrive.room.leave());
+      await guest.waitForFunction(() => !window.__zenDrive.room, null, { timeout: 8000 });
+      const left = await (await fetch(`${db}/rooms/${code}.json?${ns}`)).json();
+      const errors = players.flatMap(({ p }) => p.errors);
+
+      assert(/full/.test(refused), `5th driver: ${refused}`);
+      assert(views.every(v => v.seed === 777 && v.seen === 3) && new Set(views.map(v => v.seed)).size === 1, `views: ${JSON.stringify(views)}`);
+      assert(Math.max(...views.map(v => v.phase)) - Math.min(...views.map(v => v.phase)) < 0.002, `time of day differs: ${JSON.stringify(views)}`);
+      assert(views.slice(1).every(v => v.nearest < 60), `guests weren't brought to the others: ${JSON.stringify(views)}`);
+      assert(hostPeak > hostBefore + 8, `rammed at +30 km/h, the host went ${hostBefore.toFixed(0)} → ${hostPeak.toFixed(0)} km/h`);
+      assert(regroup.ok && regroup.near < 30, `regroup: ${JSON.stringify(regroup)}`);
+      assert(afterLeave === 3 && left === null, `leaving: host saw ${afterLeave} drivers, room left ${JSON.stringify(left)}`);
+      assert(errors.length === 0, errors[0]);
+      return `room ${code}: 4 drivers see each other (same road & clock), 5th refused · shunt ${hostBefore.toFixed(0)}→${hostPeak.toFixed(0)} km/h `
+        + `· ghost toggle · shared lamp · regroup ${regroup.far.toFixed(0)}→${regroup.near.toFixed(0)} m · leave & close clean up`;
+    } finally {
+      await Promise.all(players.map(({ ctx }) => ctx.close()));
+    }
+  });
+
   await check('world streams fast enough for 600 km/h', async () => {
     const p = await openGame(desktop, '', { quality: 'high' });
     await p.locator('.zd-start').click();
@@ -777,8 +897,9 @@ async function main() {
 
   await browser.close();
   const failed = results.filter(r => !r.ok);
-  for (const r of results) console.log(`${r.ok ? '✓' : '✗'} ${r.name} — ${r.detail}`);
-  console.log(`\n${results.length - failed.length}/${results.length} passed`);
+  const skipped = results.filter(r => r.skipped).length;
+  for (const r of results) console.log(`${r.skipped ? '–' : r.ok ? '✓' : '✗'} ${r.name} — ${r.skipped ? 'skipped: ' : ''}${r.detail}`);
+  console.log(`\n${results.length - failed.length - skipped}/${results.length - skipped} passed${skipped ? ` (${skipped} skipped)` : ''}`);
   process.exit(failed.length ? 1 : 0);
 }
 

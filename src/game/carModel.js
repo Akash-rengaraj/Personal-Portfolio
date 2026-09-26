@@ -381,17 +381,19 @@ function contactShadowTexture() {
 
 /**
  * Builds the car. `renderer` is used once to bake a studio reflection map so
- * the clear-coat paint, glass and rims have something to reflect.
+ * the clear-coat paint, glass and rims have something to reflect; other cars
+ * can pass that map in (`envMap`) to share it. The map is exposed as `envMap`.
  */
-export function createCar(paintHex, renderer) {
+export function createCar(paintHex, renderer, { envMap: sharedEnvMap = null } = {}) {
   const disposables = [];
   const keep = (x) => {
     disposables.push(x);
     return x;
   };
 
-  let envMap = null;
-  if (renderer) {
+  // other players' cars reuse the local car's reflection map instead of rendering their own
+  let envMap = sharedEnvMap;
+  if (renderer && !envMap) {
     const pmrem = new THREE.PMREMGenerator(renderer);
     const room = new RoomEnvironment();
     envMap = keep(pmrem.fromScene(room, 0.04).texture);
@@ -535,6 +537,7 @@ export function createCar(paintHex, renderer) {
   return {
     group,
     body,
+    envMap,
     setPaint(hex) {
       materials.paint.color.setHex(hex);
     },
